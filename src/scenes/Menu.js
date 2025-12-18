@@ -19,11 +19,11 @@ export class Menu extends Phaser.Scene {
         this.crearInfoControles();
         
         // Música de menú
-    //      this.musicaMenu = this.sound.add('musica_inicio', { 
-    //    volume: 0.4,
-    //        loop: true 
-    //      });
-    //      this.musicaMenu.play();
+          this.musicaMenu = this.sound.add('musica_inicio', { 
+         volume: 0.4,
+            loop: true 
+         });
+          this.musicaMenu.play();
         
         // Efectos de partículas sutiles
         this.crearParticulasMenu();
@@ -255,8 +255,9 @@ export class Menu extends Phaser.Scene {
     }
     
 crearParticulasMenu() {
- 
-    this.particulas = this.add.particles(0, 0, 'particula_emocion', {
+    this.particulas = this.add.particles('particula_emocion');
+    
+    this.emitterMenu = this.particulas.createEmitter({
         x: { min: 0, max: this.cameras.main.width },
         y: this.cameras.main.height,
         lifespan: 3000,

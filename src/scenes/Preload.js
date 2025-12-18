@@ -228,4 +228,6 @@ export class Preload extends Phaser.Scene {
             console.log('🎵 Todos los audios cargados correctamente');
         }
     }
+
+
 }
