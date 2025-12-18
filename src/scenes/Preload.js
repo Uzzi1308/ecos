@@ -33,86 +33,137 @@ export class Preload extends Phaser.Scene {
             loadingText.destroy();
         });
         
-        // DEBUG: Para ver qué se carga
         this.load.on('filecomplete', (key, type) => {
             console.log(`✅ ${key} cargado (${type})`);
         });
         
         this.load.on('loaderror', (file) => {
             console.error(`❌ Error cargando ${file.key}: ${file.src}`);
+            this.createFallbackAsset(file.key);
         });
         
         // CARGAR ASSETS PLACEHOLDER (gráficos)
-        // Crear un pixel para partículas
+        this.createPlaceholderAssets();
+        
+        // CARGAR MAPAS TILED (con manejo de errores)
+        this.loadTilemaps();
+        
+        // CARGAR TILESET
+        this.load.image('tileset_emocional', 'assets/tilesets/emocional.png');
+        
+        // CARGAR AUDIOS
+        this.loadAudio();
+    }
+
+    createPlaceholderAssets() {
         const graphics = this.make.graphics({x: 0, y: 0, add: false});
+        
+        // Partícula
         graphics.fillStyle(0xffffff);
         graphics.fillRect(0, 0, 4, 4);
         graphics.generateTexture('particula_emocion', 4, 4);
         graphics.generateTexture('particula_recuerdo', 4, 4);
-        graphics.destroy();
+        graphics.clear();
         
-        // Sprite del protagonista placeholder
-        const protaGraphics = this.make.graphics({x: 0, y: 0, add: false});
-        protaGraphics.fillStyle(0x3498db);
-        protaGraphics.fillRect(0, 0, 32, 32);
-        protaGraphics.generateTexture('protagonista', 32, 32);
-        protaGraphics.destroy();
+        // Sprite del protagonista
+        graphics.fillStyle(0x3498db);
+        graphics.fillRect(0, 0, 32, 32);
+        graphics.generateTexture('protagonista', 32, 32);
+        graphics.clear();
         
-        // Recuerdo placeholder
-        const recuerdoGraphics = this.make.graphics({x: 0, y: 0, add: false});
-        recuerdoGraphics.fillStyle(0xffff00);
-        recuerdoGraphics.fillCircle(8, 8, 8);
-        recuerdoGraphics.generateTexture('recuerdo', 16, 16);
-        recuerdoGraphics.destroy();
+        // Recuerdo
+        graphics.fillStyle(0xffff00);
+        graphics.fillCircle(8, 8, 8);
+        graphics.generateTexture('recuerdo', 16, 16);
+        graphics.clear();
         
-        // Enemigos placeholder
+        // Enemigos
         ['miedo', 'duda', 'celos', 'silencio'].forEach((tipo, i) => {
-            const enemyGraphics = this.make.graphics({x: 0, y: 0, add: false});
             const colors = [0x4444ff, 0x888888, 0xff4444, 0x000000];
-            enemyGraphics.fillStyle(colors[i]);
-            enemyGraphics.fillCircle(16, 16, 12);
-            enemyGraphics.generateTexture(`enemigo_${tipo}`, 32, 32);
-            enemyGraphics.destroy();
+            graphics.fillStyle(colors[i]);
+            graphics.fillCircle(16, 16, 12);
+            graphics.generateTexture(`enemigo_${tipo}`, 32, 32);
+            graphics.clear();
         });
         
-        // Plataformas placeholder
-        const platGraphics = this.make.graphics({x: 0, y: 0, add: false});
-        platGraphics.fillStyle(0x8b4513);
-        platGraphics.fillRect(0, 0, 64, 16);
-        platGraphics.generateTexture('plataforma_basica', 64, 16);
-        platGraphics.generateTexture('plataforma_fragil', 64, 16);
-        platGraphics.generateTexture('plataforma_movil', 64, 16);
-        platGraphics.destroy();
+        // Plataformas
+        graphics.fillStyle(0x8b4513);
+        graphics.fillRect(0, 0, 64, 16);
+        graphics.generateTexture('plataforma_basica', 64, 16);
+        graphics.generateTexture('plataforma_fragil', 64, 16);
+        graphics.generateTexture('plataforma_movil', 64, 16);
         
-// CARGAR AUDIOS REALES con las rutas CORRECTAS
-console.log('Iniciando carga de audios...');
+        graphics.destroy();
+    }
 
-// MÚSICA (archivos OGG)
-this.load.audio('musica_inicio', 'assets/audio/musica/inicio.ogg');
-this.load.audio('musica_distancia', 'assets/audio/musica/distancia.ogg');
-this.load.audio('musica_recuerdos', 'assets/audio/musica/recuerdos.ogg');
-this.load.audio('musica_conflicto', 'assets/audio/musica/conflicto.ogg');
-this.load.audio('musica_confianza', 'assets/audio/musica/confianza.ogg');
-this.load.audio('musica_presente', 'assets/audio/musica/presente.ogg');
+    loadTilemaps() {
+        const mapas = [
+            'inicio', 'distancia', 'recuerdos', 
+            'conflicto', 'confianza', 'presente'
+        ];
+        
+        mapas.forEach(mapa => {
+            try {
+                this.load.tilemapTiledJSON(`mapa_${mapa}`, `assets/mapas/${mapa}.json`);
+            } catch (error) {
+                console.warn(`⚠️ No se pudo cargar mapa ${mapa}, usando fallback`);
+            }
+        });
+    }
 
-// SFX (archivos WAV)
-this.load.audio('sfx_salto', 'assets/audio/sfx/salto.wav');
-this.load.audio('sfx_escuchar', 'assets/audio/sfx/escuchar.wav');
-this.load.audio('sfx_recuerdo', 'assets/audio/sfx/recordar.wav');
-this.load.audio('sfx_perdonar', 'assets/audio/sfx/perdonar.wav');
-this.load.audio('sfx_confiar', 'assets/audio/sfx/confiar.wav');
-this.load.audio('sfx_recuerdo_recolectado', 'assets/audio/sfx/recuerdo_recolectado.wav');
-this.load.audio('sfx_enemigo_interactuar', 'assets/audio/sfx/enemigo_interactuar.wav');
-this.load.audio('sfx_ui_click', 'assets/audio/sfx/ui_click.wav');
-this.load.audio('sfx_ui_hover', 'assets/audio/sfx/ui_hover.wav');
-this.load.audio('sfx_texto', 'assets/audio/sfx/texto.wav');
-this.load.audio('sfx_plataforma_rota', 'assets/audio/sfx/plataforma_rota.wav');
-this.load.audio('sfx_portal', 'assets/audio/sfx/portal.wav');
-this.load.audio('sfx_transicion', 'assets/audio/sfx/transicion.wav');
+    loadAudio() {
+        console.log('Iniciando carga de audios...');
+
+        // MÚSICA (archivos OGG)
+        const musica = [
+            'inicio', 'distancia', 'recuerdos', 
+            'conflicto', 'confianza', 'presente'
+        ];
+        
+        musica.forEach(track => {
+            this.load.audio(`musica_${track}`, `assets/audio/musica/${track}.ogg`);
+        });
+
+        // SFX (archivos WAV)
+        const sfx = [
+            'salto', 'escuchar', 'recuerdo', 'perdonar',
+            'confiar', 'recuerdo_recolectado', 'enemigo_interactuar',
+            'ui_click', 'ui_hover', 'texto', 'plataforma_rota',
+            'portal', 'transicion'
+        ];
+        
+        sfx.forEach(sound => {
+            this.load.audio(`sfx_${sound}`, `assets/audio/sfx/${sound}.wav`);
+        });
+    }
+
+    createFallbackAsset(key) {
+        // Crear asset de respaldo si falla la carga
+        if (key.includes('mapa_')) {
+            console.log(`Creando mapa fallback para ${key}`);
+            // Crear mapa simple procedural
+            this.registry.set(`${key}_fallback`, true);
+        } else if (key.includes('musica_') || key.includes('sfx_')) {
+            console.log(`Audio ${key} no disponible, continuando sin él`);
+        }
     }
 
     create() {
         // Crear animaciones básicas
+        this.createAnimations();
+        
+        // Verificar audios cargados
+        this.verifyAudioAssets();
+        
+        console.log('Preload completado, iniciando Menu');
+        
+        this.cameras.main.fadeOut(1000, 0, 0, 0);
+        this.time.delayedCall(1000, () => {
+            this.scene.start('Menu');
+        });
+    }
+
+    createAnimations() {
         this.anims.create({
             key: 'caminar',
             frames: [{ key: 'protagonista', frame: 0 }],
@@ -145,17 +196,15 @@ this.load.audio('sfx_transicion', 'assets/audio/sfx/transicion.wav');
             frameRate: 4,
             repeat: -1
         });
-        
-        // Verificar qué audios se cargaron correctamente
+    }
+
+    verifyAudioAssets() {
         console.log('=== VERIFICACIÓN DE AUDIOS ===');
         const audioCache = this.cache.audio;
         
-        // Lista de todas las claves de audio que deberían estar
         const audioKeys = [
-            // Música
             'musica_inicio', 'musica_distancia', 'musica_recuerdos',
             'musica_conflicto', 'musica_confianza', 'musica_presente',
-            // SFX
             'sfx_salto', 'sfx_escuchar', 'sfx_recuerdo', 'sfx_perdonar',
             'sfx_confiar', 'sfx_recuerdo_recolectado', 'sfx_enemigo_interactuar',
             'sfx_ui_click', 'sfx_ui_hover', 'sfx_texto', 'sfx_plataforma_rota',
@@ -166,28 +215,17 @@ this.load.audio('sfx_transicion', 'assets/audio/sfx/transicion.wav');
         
         audioKeys.forEach(key => {
             if (audioCache.has(key)) {
-                const audio = audioCache.get(key);
-                console.log(`✅ ${key}: ${audio.decoded ? 'DECODIFICADO' : 'Pendiente'}`);
+                console.log(`✅ ${key}: OK`);
             } else {
-                console.error(`❌ ${key}: NO ENCONTRADO en caché`);
+                console.error(`❌ ${key}: NO ENCONTRADO`);
                 audioSuccess = false;
             }
         });
         
         if (!audioSuccess) {
-            console.warn('⚠️ Algunos audios no se cargaron. Verifica las rutas.');
-            console.warn('Estructura esperada:');
-            console.warn('- assets/audio/musica/*.ogg');
-            console.warn('- assets/audio/sfx/*.wav');
+            console.warn('⚠️ Algunos audios no se cargaron.');
         } else {
             console.log('🎵 Todos los audios cargados correctamente');
         }
-        
-        console.log('Preload completado, iniciando Menu');
-        
-        this.cameras.main.fadeOut(1000, 0, 0, 0);
-        this.time.delayedCall(1000, () => {
-            this.scene.start('Menu');
-        });
     }
 }

@@ -460,17 +460,21 @@ export default class UISystem {
     
     // ========== ACTUALIZACIÓN ==========
     
-    update() {
-        // Actualizar posición de elementos si la cámara se mueve
-        const cam = this.scene.cameras.main;
-        
-        // Mantener elementos UI en posición relativa a la cámara
-        this.elementos.forEach((elemento, key) => {
-            if (key !== 'indicadorZona') {
-                elemento.x = cam.scrollX + 20;
-                elemento.y = cam.scrollY + 20 + (['barraConfianza', 'contadorRecuerdos', 'contenedorHabilidades']
-                    .indexOf(key) * 30);
-            }
-        });
+update() {
+    // 1. Actualizar cooldowns activos
+    this.cooldowns.forEach((tiempoExpiracion, nombreHabilidad) => {
+        if (this.scene.time.now >= tiempoExpiracion) {
+            this.cooldowns.delete(nombreHabilidad);
+        }
+    });
+    
+    // 2. Actualizar animación del indicador si está visible
+    // (opcional, para efectos adicionales)
+    if (this.indicador && this.indicador.visible) {
+        // Ya tiene un tween animándolo, no hace falta más
     }
+    
+    // 3. Limpiar notificaciones expiradas (opcional, ya se manejan con timers)
+    // Las notificaciones se eliminan automáticamente con delayedCall
+}
 }

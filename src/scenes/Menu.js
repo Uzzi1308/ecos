@@ -19,11 +19,11 @@ export class Menu extends Phaser.Scene {
         this.crearInfoControles();
         
         // Música de menú
-         this.musicaMenu = this.sound.add('musica_inicio', { 
-       volume: 0.4,
-           loop: true 
-         });
-         this.musicaMenu.play();
+    //      this.musicaMenu = this.sound.add('musica_inicio', { 
+    //    volume: 0.4,
+    //        loop: true 
+    //      });
+    //      this.musicaMenu.play();
         
         // Efectos de partículas sutiles
         this.crearParticulasMenu();
