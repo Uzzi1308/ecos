@@ -19,27 +19,14 @@ export class Menu extends Phaser.Scene {
         this.crearInfoControles();
         
         // Música de menú
-        // this.musicaMenu = this.sound.add('musica_inicio', { 
-        //     volume: 0.4,
-        //     loop: true 
-        // });
-        // this.musicaMenu.play();
+         this.musicaMenu = this.sound.add('musica_inicio', { 
+       volume: 0.4,
+           loop: true 
+         });
+         this.musicaMenu.play();
         
         // Efectos de partículas sutiles
         this.crearParticulasMenu();
-
-            this.time.delayedCall(1000, () => { // Espera 1 segundo
-        try {
-            const testSound = this.sound.add('tono_prueba', { volume: 0.7 });
-            testSound.play();
-            console.log('✅ SONIDO DE PRUEBA REPRODUCIÉNDOSE');
-            
-            // Verifica en consola
-            console.log('Audio cargado en cache:', this.cache.audio.has('tono_prueba'));
-        } catch (error) {
-            console.error('❌ Error al reproducir:', error);
-        }
-    });
     }
     
     crearFondoEmocional() {
@@ -268,7 +255,7 @@ export class Menu extends Phaser.Scene {
     }
     
 crearParticulasMenu() {
-
+ 
     this.particulas = this.add.particles(0, 0, 'particula_emocion', {
         x: { min: 0, max: this.cameras.main.width },
         y: this.cameras.main.height,
