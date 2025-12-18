@@ -1,3 +1,4 @@
+
 export default class Controles {
     constructor(scene) {
         this.scene = scene;

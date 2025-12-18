@@ -1,3 +1,13 @@
+import Protagonista from '../../entities/Protagonista.js';
+import Controles from '../../config/Controles.js';
+import DialogoSystem from '../../systems/DialogoSystem.js';
+import UISystem from '../../systems/UISystem.js';
+import EfectosVisuales from '../../systems/EfectosVisuales.js';
+import HabilidadManager from '../../managers/HabilidadManager.js';
+import AudioManager from '../../managers/AudioManager.js';
+import EnemigoEmocional from '../../entities/EnemigoEmocional.js';
+import Memoria from '../../entities/Memoria.js';
+
 export default class Conflicto extends Phaser.Scene {
     constructor() {
         super({ key: 'Conflicto' });

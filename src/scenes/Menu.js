@@ -19,14 +19,27 @@ export class Menu extends Phaser.Scene {
         this.crearInfoControles();
         
         // Música de menú
-        this.musicaMenu = this.sound.add('musica_inicio', { 
-            volume: 0.4,
-            loop: true 
-        });
-        this.musicaMenu.play();
+        // this.musicaMenu = this.sound.add('musica_inicio', { 
+        //     volume: 0.4,
+        //     loop: true 
+        // });
+        // this.musicaMenu.play();
         
         // Efectos de partículas sutiles
         this.crearParticulasMenu();
+
+            this.time.delayedCall(1000, () => { // Espera 1 segundo
+        try {
+            const testSound = this.sound.add('tono_prueba', { volume: 0.7 });
+            testSound.play();
+            console.log('✅ SONIDO DE PRUEBA REPRODUCIÉNDOSE');
+            
+            // Verifica en consola
+            console.log('Audio cargado en cache:', this.cache.audio.has('tono_prueba'));
+        } catch (error) {
+            console.error('❌ Error al reproducir:', error);
+        }
+    });
     }
     
     crearFondoEmocional() {
@@ -254,35 +267,22 @@ export class Menu extends Phaser.Scene {
         }).setOrigin(0.5);
     }
     
-    crearParticulasMenu() {
-        const particulas = this.add.particles('particula_emocion');
-        
-        // Emisor de partículas para el menú
-        const emitter = particulas.createEmitter({
-            x: { min: 0, max: 1280 },
-            y: 720,
-            speedY: { min: -100, max: -200 },
-            speedX: { min: -50, max: 50 },
-            scale: { start: 0.2, end: 0 },
-            alpha: { start: 0.3, end: 0 },
-            lifespan: 3000,
-            quantity: 2,
-            frequency: 500
-        });
-        
-        // Cambiar color de las partículas periódicamente
-        const colores = [0x3498db, 0x9b59b6, 0xe74c3c, 0x2ecc71];
-        let colorIndex = 0;
-        
-        this.time.addEvent({
-            delay: 2000,
-            callback: () => {
-                colorIndex = (colorIndex + 1) % colores.length;
-                emitter.setTint(colores[colorIndex]);
-            },
-            loop: true
-        });
-    }
+crearParticulasMenu() {
+
+    this.particulas = this.add.particles(0, 0, 'particula_emocion', {
+        x: { min: 0, max: this.cameras.main.width },
+        y: this.cameras.main.height,
+        lifespan: 3000,
+        speedY: { min: -100, max: -50 },
+        speedX: { min: -20, max: 20 },
+        scale: { start: 0.5, end: 0 },
+        alpha: { start: 0.8, end: 0 },
+        blendMode: 'ADD',
+        frequency: 50,
+        quantity: 1,
+        gravityY: 20
+    });
+}
     
     mostrarCreditos() {
         // Crear panel de créditos
