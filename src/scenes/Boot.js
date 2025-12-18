@@ -1,3 +1,18 @@
+export class Boot extends Phaser.Scene {
+    constructor() {
+        super({ key: 'Boot' });
+    }
+
+    preload() {
+        console.log('Boot scene iniciada');
+    }
+
+    create() {
+        console.log('Boot completado, iniciando Preload');
+        this.scene.start('Preload');
+    }
+}
+
 export default class Controles {
     constructor(scene) {
         this.scene = scene;

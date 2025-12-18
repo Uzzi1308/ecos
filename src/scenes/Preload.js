@@ -7,10 +7,11 @@ export class Preload extends Phaser.Scene {
         const centerX = this.cameras.main.centerX;
         const centerY = this.cameras.main.centerY;
         
-        // Barra de progreso más elaborada
+        // Barra de progreso
         const progressBar = this.add.graphics();
         const progressBox = this.add.graphics();
-        const loadingText = this.add.text(centerX, centerY - 30, 'Cargando emociones...', {
+        const loadingText = this.add.text(centerX, centerY - 30, 
+            'Cargando emociones...', {
             fontSize: '20px',
             fill: '#ffffff'
         }).setOrigin(0.5);
@@ -21,8 +22,8 @@ export class Preload extends Phaser.Scene {
         this.load.on('progress', (value) => {
             progressBar.clear();
             progressBar.fillStyle(0x3498db, 1);
-            progressBar.fillRect(centerX - 150, centerY + 10, 300 * value, 30);
-            
+            progressBar.fillRect(centerX - 150, centerY + 10, 
+                300 * value, 30);
             loadingText.setText(`Cargando: ${Math.floor(value * 100)}%`);
         });
         
@@ -30,84 +31,68 @@ export class Preload extends Phaser.Scene {
             progressBar.destroy();
             progressBox.destroy();
             loadingText.destroy();
-            
-            // Efecto de transición
-            this.cameras.main.fadeOut(1000, 0, 0, 0);
-            this.time.delayedCall(1000, () => {
-                this.scene.start('Menu');
-            });
         });
         
-        // ========== CARGAR TODOS LOS ASSETS ==========
+        // CARGAR ASSETS PLACEHOLDER
+        // Por ahora, crear gráficos simples en lugar de cargar imágenes
         
-        // 1. SPRITES DEL PROTAGONISTA
-        this.load.spritesheet('protagonista', 'assets/sprites/protagonista/protagonista.png', {
-            frameWidth: 32,
-            frameHeight: 32
+        // Crear un pixel para partículas
+        const graphics = this.make.graphics({x: 0, y: 0, add: false});
+        graphics.fillStyle(0xffffff);
+        graphics.fillRect(0, 0, 4, 4);
+        graphics.generateTexture('particula_emocion', 4, 4);
+        graphics.generateTexture('particula_recuerdo', 4, 4);
+        graphics.destroy();
+        
+        // Sprite del protagonista placeholder
+        const protaGraphics = this.make.graphics({x: 0, y: 0, add: false});
+        protaGraphics.fillStyle(0x3498db);
+        protaGraphics.fillRect(0, 0, 32, 32);
+        protaGraphics.generateTexture('protagonista', 32, 32);
+        protaGraphics.destroy();
+        
+        // Recuerdo placeholder
+        const recuerdoGraphics = this.make.graphics({x: 0, y: 0, add: false});
+        recuerdoGraphics.fillStyle(0xffff00);
+        recuerdoGraphics.fillCircle(8, 8, 8);
+        recuerdoGraphics.generateTexture('recuerdo', 16, 16);
+        recuerdoGraphics.destroy();
+        
+        // Enemigos placeholder
+        ['miedo', 'duda', 'celos', 'silencio'].forEach((tipo, i) => {
+            const enemyGraphics = this.make.graphics({x: 0, y: 0, add: false});
+            const colors = [0x4444ff, 0x888888, 0xff4444, 0x000000];
+            enemyGraphics.fillStyle(colors[i]);
+            enemyGraphics.fillCircle(16, 16, 12);
+            enemyGraphics.generateTexture(`enemigo_${tipo}`, 32, 32);
+            enemyGraphics.destroy();
         });
         
-        // 2. ENEMIGOS EMOCIONALES
-        this.load.image('enemigo_miedo', 'assets/sprites/enemigos_emocionales/miedo.png');
-        this.load.image('enemigo_duda', 'assets/sprites/enemigos_emocionales/duda.png');
-        this.load.image('enemigo_celos', 'assets/sprites/enemigos_emocionales/celos.png');
-        this.load.image('enemigo_silencio', 'assets/sprites/enemigos_emocionales/silencio.png');
+        // Plataformas placeholder
+        const platGraphics = this.make.graphics({x: 0, y: 0, add: false});
+        platGraphics.fillStyle(0x8b4513);
+        platGraphics.fillRect(0, 0, 64, 16);
+        platGraphics.generateTexture('plataforma_basica', 64, 16);
+        platGraphics.generateTexture('plataforma_fragil', 64, 16);
+        platGraphics.generateTexture('plataforma_movil', 64, 16);
+        platGraphics.destroy();
         
-        // 3. OBJETOS Y RECUERDOS
-        this.load.spritesheet('recuerdo', 'assets/sprites/recuerdo.png', {
-            frameWidth: 16,
-            frameHeight: 16
+        // AUDIO PLACEHOLDER (silencio)
+        const silentAudio = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+        
+        ['musica_inicio', 'musica_distancia', 'musica_recuerdos', 
+         'musica_conflicto', 'musica_confianza', 'musica_presente',
+         'sfx_salto', 'sfx_recuerdo', 'sfx_texto', 'sfx_plataforma_rota',
+         'sfx_escuchar', 'sfx_confiar', 'sfx_perdonar'].forEach(key => {
+            this.load.audio(key, silentAudio);
         });
-        
-        // 4. PLATAFORMAS Y ELEMENTOS DEL ENTORNO
-        this.load.image('plataforma_basica', 'assets/sprites/entornos/plataforma_basica.png');
-        this.load.image('plataforma_fragil', 'assets/sprites/entornos/plataforma_fragil.png');
-        this.load.image('plataforma_movil', 'assets/sprites/entornos/plataforma_movil.png');
-        
-        // 5. TILESETS (si usas mapas de tiles)
-        this.load.image('tileset_emocional', 'assets/tilesets/tileset_emocional.png');
-        
-        // 6. MAPAS (JSON de Tiled)
-        this.load.tilemapTiledJSON('mapa_inicio', 'assets/mapas/inicio.json');
-        this.load.tilemapTiledJSON('mapa_distancia', 'assets/mapas/distancia.json');
-        this.load.tilemapTiledJSON('mapa_recuerdos', 'assets/mapas/recuerdos.json');
-        this.load.tilemapTiledJSON('mapa_conflicto', 'assets/mapas/conflicto.json');
-        this.load.tilemapTiledJSON('mapa_confianza', 'assets/mapas/confianza.json');
-        this.load.tilemapTiledJSON('mapa_presente', 'assets/mapas/presente.json');
-        
-        // 7. MÚSICA
-        this.load.audio('musica_inicio', 'assets/audio/musica/inicio.ogg');
-        this.load.audio('musica_distancia', 'assets/audio/musica/distancia.ogg');
-        this.load.audio('musica_recuerdos', 'assets/audio/musica/recuerdos.ogg');
-        this.load.audio('musica_conflicto', 'assets/audio/musica/conflicto.ogg');
-        this.load.audio('musica_confianza', 'assets/audio/musica/confianza.ogg');
-        this.load.audio('musica_presente', 'assets/audio/musica/presente.ogg');
-        
-        // 8. EFECTOS DE SONIDO
-        this.load.audio('sfx_salto', 'assets/audio/sfx/salto.ogg');
-        this.load.audio('sfx_recuerdo', 'assets/audio/sfx/recuerdo.ogg');
-        this.load.audio('sfx_texto', 'assets/audio/sfx/texto.ogg');
-        this.load.audio('sfx_plataforma_rota', 'assets/audio/sfx/plataforma_rota.ogg');
-        this.load.audio('sfx_escuchar', 'assets/audio/sfx/escuchar.ogg');
-        this.load.audio('sfx_confiar', 'assets/audio/sfx/confiar.ogg');
-        this.load.audio('sfx_perdonar', 'assets/audio/sfx/perdonar.ogg');
-        
-        // 9. UI
-        this.load.image('ui_corazon', 'assets/ui/corazon.png');
-        this.load.image('ui_boton', 'assets/ui/boton.png');
-        this.load.image('ui_barra', 'assets/ui/barra.png');
-        
-        // 10. PARTÍCULAS
-        this.load.image('particula_recuerdo', 'assets/sprites/particulas/recuerdo.png');
-        this.load.image('particula_emocion', 'assets/sprites/particulas/emocion.png');
     }
 
     create() {
-        // ========== CREAR ANIMACIONES ==========
-        
-        // Animaciones del protagonista
+        // Crear animaciones básicas
         this.anims.create({
             key: 'caminar',
-            frames: this.anims.generateFrameNumbers('protagonista', { start: 0, end: 3 }),
+            frames: [{ key: 'protagonista', frame: 0 }],
             frameRate: 10,
             repeat: -1
         });
@@ -120,35 +105,29 @@ export class Preload extends Phaser.Scene {
         
         this.anims.create({
             key: 'saltar',
-            frames: [{ key: 'protagonista', frame: 4 }],
+            frames: [{ key: 'protagonista', frame: 0 }],
             frameRate: 1
         });
         
         this.anims.create({
             key: 'escuchar',
-            frames: this.anims.generateFrameNumbers('protagonista', { start: 5, end: 7 }),
+            frames: [{ key: 'protagonista', frame: 0 }],
             frameRate: 3,
             repeat: 0
         });
         
-        // Animaciones de recuerdos
         this.anims.create({
             key: 'recuerdo_flotar',
-            frames: this.anims.generateFrameNumbers('recuerdo', { start: 0, end: 3 }),
+            frames: [{ key: 'recuerdo', frame: 0 }],
             frameRate: 4,
             repeat: -1
         });
         
-        // ========== INICIALIZAR SISTEMAS GLOBALES ==========
+        console.log('Preload completado, iniciando Menu');
         
-        // Sistema de guardado
-        if (!this.registry.has('guardadoManager')) {
-            this.registry.set('guardadoManager', new (this.sys.game.context).GuardadoManager());
-        }
-        
-        // Sistema de audio
-        if (!this.registry.has('audioManager')) {
-            this.registry.set('audioManager', new (this.sys.game.context).AudioManager(this));
-        }
+        this.cameras.main.fadeOut(1000, 0, 0, 0);
+        this.time.delayedCall(1000, () => {
+            this.scene.start('Menu');
+        });
     }
 }

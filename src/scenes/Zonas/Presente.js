@@ -1,4 +1,4 @@
-export class Presente extends Phaser.Scene {
+export default class Presente extends Phaser.Scene {
     constructor() {
         super({ key: 'Presente' });
         

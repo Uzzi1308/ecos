@@ -1,4 +1,4 @@
-export class Recuerdos extends Phaser.Scene {
+export default class Recuerdos extends Phaser.Scene {
     constructor() {
         super({ key: 'Recuerdos' });
         

@@ -2,7 +2,6 @@
   "name": "ecos-entre-nosotros",
   "version": "1.0.0",
   "description": "Metroidvania emocional sobre relaciones",
-  "main": "src/main.js",
   "scripts": {
     "start": "parcel index.html",
     "build": "parcel build index.html --public-url ./",
@@ -12,7 +11,8 @@
     "phaser": "^3.60.0"
   },
   "devDependencies": {
+    "gh-pages": "^5.0.0",
     "parcel": "^2.9.3",
-    "gh-pages": "^5.0.0"
+    "process": "^0.11.10"
   }
 }
