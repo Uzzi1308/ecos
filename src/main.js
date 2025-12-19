@@ -1,16 +1,15 @@
-
-
 import { Boot } from './scenes/Boot.js';
 import { Preload } from './scenes/Preload.js';
 import { Menu } from './scenes/Menu.js';
+import { Inicio } from './scenes/Inicio.js'; 
 
 const config = {
-    type: Phaser.AUTO,  // Phaser es global ahora
-    width: 800,
-    height: 600,
+    type: Phaser.AUTO,
+    width: 1280,
+    height: 720,
     parent: 'game',
     backgroundColor: '#000000',
-    scene: [Boot, Preload, Menu],
+    scene: [Boot, Preload, Menu, Inicio], 
     physics: {
         default: 'arcade',
         arcade: {

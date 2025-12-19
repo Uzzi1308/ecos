@@ -6,178 +6,256 @@ export class Menu extends Phaser.Scene {
     }
 
     create() {
-        // Fondo con gradiente emocional
-        this.crearFondoEmocional();
+        // Obtener dimensiones de la pantalla
+        const screenWidth = this.cameras.main.width;
+        const screenHeight = this.cameras.main.height;
+        const centerX = screenWidth / 2;
+        const centerY = screenHeight / 2;
         
-        // Título del juego
-        this.crearTitulo();
+        console.log(`🏠 Menú principal - Tamaño: ${screenWidth}x${screenHeight}`);
         
-        // Botones del menú
-        this.crearBotonesMenu();
+        // Fondo que se adapta
+        this.crearFondoAdaptable();
+        
+        // Título (usando porcentajes)
+        this.crearTitulo(centerX, screenHeight * 0.15);
+        
+        // Botones (usando porcentajes)
+        this.crearBotonesMenu(centerX, screenHeight * 0.45);
         
         // Información de controles
-        this.crearInfoControles();
+        this.crearInfoControles(centerX, screenHeight * 0.85);
         
-        // Música de menú
-          this.musicaMenu = this.sound.add('musica_inicio', { 
-         volume: 0.4,
-            loop: true 
-         });
-          this.musicaMenu.play();
+        console.log('🎵 Modo sin música temporal');
         
-        // Efectos de partículas sutiles
-        this.crearParticulasMenu();
+        // Efectos visuales
+        this.crearEfectosVisuales();
     }
     
-    crearFondoEmocional() {
-        // Gradiente que cambia de color
-        const gradient = this.add.graphics();
-        const colors = [0x3498db, 0x9b59b6, 0xe74c3c, 0x2ecc71];
-        let colorIndex = 0;
+    crearFondoAdaptable() {
+        const width = this.cameras.main.width;
+        const height = this.cameras.main.height;
         
-        const dibujarGradiente = () => {
-            gradient.clear();
+        // Fondo sólido
+        this.cameras.main.setBackgroundColor(0x1a1a2e);
+        
+        // Gradiente
+        const graphics = this.add.graphics();
+        graphics.fillGradientStyle(
+            0x1a1a2e, 0x1a1a2e,
+            0x16213e, 0x16213e,
+            1, 1, 1, 1
+        );
+        graphics.fillRect(0, 0, width, height);
+        
+        // Estrellas de fondo
+        for (let i = 0; i < 60; i++) {
+            const x = Phaser.Math.Between(0, width);
+            const y = Phaser.Math.Between(0, height);
+            const size = Phaser.Math.FloatBetween(0.5, 2);
+            const alpha = Phaser.Math.FloatBetween(0.1, 0.4);
             
-            const color = colors[colorIndex];
-            const nextColor = colors[(colorIndex + 1) % colors.length];
-            
-            gradient.fillGradientStyle(
-                color, color,
-                nextColor, nextColor,
-                1, 1, 1, 1
-            );
-            
-            gradient.fillRect(0, 0, 1280, 720);
-        };
-        
-        dibujarGradiente();
-        
-        // Transición de colores cada 5 segundos
-        this.time.addEvent({
-            delay: 5000,
-            callback: () => {
-                colorIndex = (colorIndex + 1) % colors.length;
-                dibujarGradiente();
-            },
-            loop: true
-        });
-        
-        // Efecto de estrellas/titileo
-        for (let i = 0; i < 50; i++) {
-            const x = Phaser.Math.Between(0, 1280);
-            const y = Phaser.Math.Between(0, 720);
-            const size = Phaser.Math.Between(1, 3);
-            const star = this.add.circle(x, y, size, 0xffffff, 0.5);
+            const star = this.add.circle(x, y, size, 0xffffff, alpha);
             
             this.tweens.add({
                 targets: star,
-                alpha: { from: 0.2, to: 0.8 },
-                duration: Phaser.Math.Between(1000, 3000),
+                alpha: { from: alpha, to: alpha * 0.5 },
+                duration: Phaser.Math.Between(2000, 4000),
                 yoyo: true,
                 repeat: -1,
-                delay: Phaser.Math.Between(0, 2000)
+                delay: Phaser.Math.Between(0, 3000)
             });
         }
     }
     
-    crearTitulo() {
-        // Título principal con efecto
-        const titulo = this.add.text(640, 150, 'ECOS ENTRE NOSOTROS', {
-            fontFamily: 'Courier New',
-            fontSize: '64px',
+    crearTitulo(centerX, yPos) {
+        // Título principal
+        const titulo = this.add.text(centerX, yPos, 'ECOS ENTRE NOSOTROS', {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: this.getFontSize(48, 64), // Tamaño responsive
+            fontWeight: 'bold',
             color: '#ffffff',
+            align: 'center',
             stroke: '#3498db',
             strokeThickness: 6,
             shadow: {
-                offsetX: 4,
-                offsetY: 4,
+                offsetX: 3,
+                offsetY: 3,
                 color: '#000000',
-                blur: 5,
+                blur: 6,
                 stroke: true,
                 fill: true
             }
         }).setOrigin(0.5);
         
-        // Subtítulo
-        const subtitulo = this.add.text(640, 220, 'Un viaje emocional', {
-            fontFamily: 'Courier New',
-            fontSize: '24px',
-            color: '#cccccc',
-            fontStyle: 'italic'
-        }).setOrigin(0.5);
-        
-        // Efecto de parpadeo en el título
+        // Animación sutil
         this.tweens.add({
             targets: titulo,
-            alpha: { from: 0.8, to: 1 },
-            duration: 2000,
+            alpha: { from: 0.9, to: 1 },
+            duration: 1500,
             yoyo: true,
             repeat: -1
         });
+        
+        // Subtítulo
+        const subtitulo = this.add.text(centerX, yPos + 60, 'Un viaje emocional', {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: this.getFontSize(20, 24),
+            color: '#bdc3c7',
+            fontStyle: 'italic'
+        }).setOrigin(0.5);
     }
     
-    crearBotonesMenu() {
+    crearBotonesMenu(centerX, startY) {
         const botonesConfig = [
-            { texto: 'NUEVA PARTIDA', y: 320, accion: 'nuevaPartida' },
-            { texto: 'CONTINUAR', y: 380, accion: 'continuar' },
-            { texto: 'CONFIGURACIÓN', y: 440, accion: 'configuracion' },
-            { texto: 'CRÉDITOS', y: 500, accion: 'creditos' },
-            { texto: 'SALIR', y: 560, accion: 'salir' }
+            { texto: 'NUEVA PARTIDA', accion: 'nuevaPartida' },
+            { texto: 'CONTINUAR', accion: 'continuar' },
+            { texto: 'OPCIONES', accion: 'configuracion' },
+            { texto: 'CRÉDITOS', accion: 'creditos' },
+            { texto: 'SALIR', accion: 'salir' }
         ];
         
+        const buttonSpacing = 60;
+        const buttonWidth = 320;
+        const buttonHeight = 50;
+        
         botonesConfig.forEach((config, index) => {
-            const boton = this.add.text(640, config.y, config.texto, {
-                fontFamily: 'Courier New',
-                fontSize: '28px',
-                color: '#aaaaaa',
-                backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                padding: { x: 20, y: 10 }
-            }).setOrigin(0.5).setInteractive();
+            const buttonY = startY + (index * buttonSpacing);
             
-            // Efecto hover
-            boton.on('pointerover', () => {
-                boton.setStyle({ color: '#ffffff', backgroundColor: 'rgba(52, 152, 219, 0.7)' });
-                this.sound.play('sfx_texto', { volume: 0.2 });
+            // Fondo del botón
+            const fondoBoton = this.add.rectangle(
+                centerX, 
+                buttonY, 
+                buttonWidth, 
+                buttonHeight, 
+                0x2c3e50, 
+                0.7
+            ).setStrokeStyle(1, 0x3498db, 0.5);
+            
+            // Texto del botón
+            const boton = this.add.text(centerX, buttonY, config.texto, {
+                fontFamily: 'Arial, sans-serif',
+                fontSize: this.getFontSize(20, 24),
+                color: '#ecf0f1',
+                align: 'center'
+            }).setOrigin(0.5);
+            
+            // Área interactiva
+            const areaInteractiva = this.add.zone(
+                centerX, 
+                buttonY, 
+                buttonWidth, 
+                buttonHeight
+            ).setInteractive();
+            
+            // Efectos hover
+            areaInteractiva.on('pointerover', () => {
+                fondoBoton.setFillStyle(0x3498db, 0.8);
+                fondoBoton.setStrokeStyle(2, 0xffffff, 0.8);
+                boton.setColor('#ffffff');
+                boton.setScale(1.05);
                 
-                // Efecto visual adicional
-                this.tweens.add({
-                    targets: boton,
-                    scale: 1.05,
-                    duration: 200,
-                    ease: 'Power2'
+                // Sonido si está disponible
+                try {
+                    this.sound.play('sfx_ui_hover', { volume: 0.3 });
+                } catch (e) {
+                    // Silencio si no hay sonido
+                }
+            });
+            
+            areaInteractiva.on('pointerout', () => {
+                fondoBoton.setFillStyle(0x2c3e50, 0.7);
+                fondoBoton.setStrokeStyle(1, 0x3498db, 0.5);
+                boton.setColor('#ecf0f1');
+                boton.setScale(1);
+            });
+            
+            areaInteractiva.on('pointerdown', () => {
+                fondoBoton.setFillStyle(0x2980b9, 0.9);
+                boton.setScale(0.95);
+                
+                // Sonido de clic
+                try {
+                    this.sound.play('sfx_ui_click', { volume: 0.4 });
+                } catch (e) {
+                    // Silencio
+                }
+                
+                // Acción con delay
+                this.time.delayedCall(150, () => {
+                    this.ejecutarAccion(config.accion);
                 });
             });
             
-            boton.on('pointerout', () => {
-                boton.setStyle({ color: '#aaaaaa', backgroundColor: 'rgba(0, 0, 0, 0.5)' });
-                this.tweens.add({
-                    targets: boton,
-                    scale: 1,
-                    duration: 200
-                });
-            });
+            // Animación de entrada
+            fondoBoton.setAlpha(0).setScale(0.9);
+            boton.setAlpha(0).setScale(0.9);
             
-            boton.on('pointerdown', () => {
-                this.sound.play('sfx_recuerdo', { volume: 0.3 });
-                this.ejecutarAccion(config.accion);
-            });
-            
-            // Animación de entrada escalonada
-            boton.setAlpha(0).setScale(0.8);
             this.tweens.add({
-                targets: boton,
+                targets: [fondoBoton, boton],
                 alpha: 1,
                 scale: 1,
-                duration: 500,
+                duration: 600,
                 delay: 200 + (index * 100),
                 ease: 'Back.out'
             });
             
-            this.botones.push(boton);
+            this.botones.push({ 
+                fondo: fondoBoton, 
+                texto: boton, 
+                area: areaInteractiva,
+                accion: config.accion 
+            });
         });
     }
     
+    crearInfoControles(centerX, yPos) {
+        const controles = this.add.text(centerX, yPos, 
+            'Controles: ← → Moverse | ↑ Saltar | E Interactuar | R Recordar', {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: this.getFontSize(14, 16),
+            color: '#7f8c8d'
+        }).setOrigin(0.5);
+    }
+    
+    crearEfectosVisuales() {
+        const width = this.cameras.main.width;
+        
+        // Algunas partículas simples
+        for (let i = 0; i < 15; i++) {
+            const x = Phaser.Math.Between(0, width);
+            const y = this.cameras.main.height + 10;
+            const size = Phaser.Math.FloatBetween(1, 2);
+            
+            const particula = this.add.circle(x, y, size, 0xffffff, 0.2);
+            
+            this.tweens.add({
+                targets: particula,
+                y: y - 150,
+                x: x + Phaser.Math.Between(-30, 30),
+                alpha: { from: 0.2, to: 0 },
+                scale: { from: 1, to: 0.3 },
+                duration: Phaser.Math.Between(2000, 4000),
+                onComplete: () => particula.destroy()
+            });
+        }
+    }
+    
+    // Método auxiliar para tamaños de fuente responsive
+    getFontSize(minSize, maxSize) {
+        const width = this.cameras.main.width;
+        // Ajusta el tamaño según el ancho de pantalla
+        if (width < 800) return `${minSize}px`;
+        if (width > 1280) return `${maxSize}px`;
+        
+        // Interpolación lineal
+        const size = minSize + (maxSize - minSize) * ((width - 800) / (1280 - 800));
+        return `${Math.round(size)}px`;
+    }
+    
     ejecutarAccion(accion) {
+        console.log(`🔘 Acción: ${accion}`);
+        
         switch(accion) {
             case 'nuevaPartida':
                 this.transicionarAInicio(true);
@@ -188,7 +266,7 @@ export class Menu extends Phaser.Scene {
                 break;
                 
             case 'configuracion':
-                this.scene.launch('Configuracion');
+                this.mostrarMensajeTemporal('Opciones en desarrollo');
                 break;
                 
             case 'creditos':
@@ -202,168 +280,188 @@ export class Menu extends Phaser.Scene {
     }
     
     transicionarAInicio(nuevaPartida = false) {
-        // Detener música
-        if (this.musicaMenu) {
-            this.musicaMenu.stop();
-        }
+        console.log('🚀 Iniciando juego...');
         
-        // Efecto de transición
-        this.cameras.main.fadeOut(1000, 0, 0, 0);
+        // Desactivar interacciones durante la transición
+        this.botones.forEach(boton => {
+            boton.area.disableInteractive();
+        });
         
-        // Limpiar partida anterior si es nueva
-        if (nuevaPartida) {
-            const guardadoManager = this.registry.get('guardadoManager');
-            guardadoManager.limpiar();
-        }
+        // Fade out
+        this.cameras.main.fadeOut(800, 0, 0, 0);
         
-        this.time.delayedCall(1000, () => {
+        this.time.delayedCall(800, () => {
+            // Cambiar a la escena Inicio
             this.scene.start('Inicio');
         });
     }
     
     cargarPartida() {
-        const guardadoManager = this.registry.get('guardadoManager');
-        const datos = guardadoManager.cargar();
+        console.log('📂 Cargando partida...');
         
-        if (datos && datos.zonaActual) {
-            this.transicionarAInicio(false);
-        } else {
-            // No hay partida guardada
-            const mensaje = this.add.text(640, 620, 'No hay partida guardada', {
-                fontFamily: 'Courier New',
-                fontSize: '20px',
-                color: '#e74c3c'
-            }).setOrigin(0.5);
-            
-            this.tweens.add({
-                targets: mensaje,
-                alpha: 0,
-                duration: 1000,
-                delay: 2000,
-                onComplete: () => mensaje.destroy()
-            });
-        }
+        const centerX = this.cameras.main.width / 2;
+        const mensaje = this.add.text(centerX, 620, 'No hay partidas guardadas aún', {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '20px',
+            color: '#e74c3c',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            padding: { x: 20, y: 10 }
+        }).setOrigin(0.5).setDepth(10);
+        
+        // Animación del mensaje
+        this.tweens.add({
+            targets: mensaje,
+            y: 600,
+            duration: 300,
+            yoyo: true,
+            onComplete: () => {
+                this.tweens.add({
+                    targets: mensaje,
+                    alpha: 0,
+                    duration: 1000,
+                    delay: 1500,
+                    onComplete: () => mensaje.destroy()
+                });
+            }
+        });
     }
-    
-    crearInfoControles() {
-        const controles = this.add.text(640, 680, 
-            'Controles: ↑↓←→ Moverse | E Escuchar | R Recordar | F Perdonar', {
-            fontFamily: 'Courier New',
-            fontSize: '14px',
-            color: '#777777'
-        }).setOrigin(0.5);
-    }
-    
-crearParticulasMenu() {
-    this.particulas = this.add.particles('particula_emocion');
-    
-    this.emitterMenu = this.particulas.createEmitter({
-        x: { min: 0, max: this.cameras.main.width },
-        y: this.cameras.main.height,
-        lifespan: 3000,
-        speedY: { min: -100, max: -50 },
-        speedX: { min: -20, max: 20 },
-        scale: { start: 0.5, end: 0 },
-        alpha: { start: 0.8, end: 0 },
-        blendMode: 'ADD',
-        frequency: 50,
-        quantity: 1,
-        gravityY: 20
-    });
-}
     
     mostrarCreditos() {
-        // Crear panel de créditos
-        const panel = this.add.rectangle(640, 360, 800, 500, 0x000000, 0.9)
-            .setStrokeStyle(2, 0x3498db);
+        const width = this.cameras.main.width;
+        const height = this.cameras.main.height;
+        const centerX = width / 2;
+        const centerY = height / 2;
         
-        const titulo = this.add.text(640, 180, 'CRÉDITOS', {
-            fontFamily: 'Courier New',
-            fontSize: '40px',
-            color: '#3498db'
-        }).setOrigin(0.5);
+        // Fondo semi-transparente
+        const fondoCreditos = this.add.rectangle(
+            centerX, 
+            centerY, 
+            width * 0.8, 
+            height * 0.7, 
+            0x000000, 
+            0.85
+        ).setStrokeStyle(3, 0x3498db, 0.7).setDepth(5);
         
+        // Título
+        const tituloCreditos = this.add.text(
+            centerX, 
+            centerY - height * 0.25, 
+            'CRÉDITOS', {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: this.getFontSize(32, 48),
+            color: '#3498db',
+            fontWeight: 'bold'
+        }).setOrigin(0.5).setDepth(6);
+        
+        // Texto de créditos
         const creditos = [
-            'DESARROLLO Y DISEÑO',
-            'Tu Nombre',
+            'DESARROLLADO CON PHASER 3',
             '',
-            'MÚSICA Y SONIDOS',
-            'Artistas de OpenGameArt',
-            '',
-            'AGRADECIMIENTOS ESPECIALES',
-            'A todas las personas que creen',
-            'en el poder de las emociones',
+            'Arte y diseño: Placeholder',
+            'Programación: Tú',
+            'Música: Placeholder',
             '',
             '¡Gracias por jugar!'
         ];
         
         creditos.forEach((linea, index) => {
-            const y = 250 + (index * 30);
-            const color = index % 3 === 0 ? '#3498db' : '#ffffff';
-            const size = index % 3 === 0 ? '20px' : '16px';
+            const y = centerY - height * 0.15 + (index * 35);
+            const esTitulo = index === 0 || linea === '';
             
-            this.add.text(640, y, linea, {
-                fontFamily: 'Courier New',
-                fontSize: size,
-                color: color
-            }).setOrigin(0.5);
+            this.add.text(centerX, y, linea, {
+                fontFamily: 'Arial, sans-serif',
+                fontSize: esTitulo ? '20px' : '18px',
+                color: esTitulo ? '#3498db' : '#ffffff',
+                fontStyle: esTitulo ? 'bold' : 'normal'
+            }).setOrigin(0.5).setDepth(6);
         });
         
-        const botonCerrar = this.add.text(640, 550, 'VOLVER', {
-            fontFamily: 'Courier New',
+        // Botón cerrar
+        const botonCerrar = this.add.text(
+            centerX, 
+            centerY + height * 0.2, 
+            'VOLVER AL MENÚ', {
+            fontFamily: 'Arial, sans-serif',
             fontSize: '24px',
-            color: '#aaaaaa',
-            backgroundColor: 'rgba(52, 152, 219, 0.3)',
-            padding: { x: 20, y: 10 }
-        }).setOrigin(0.5).setInteractive();
+            color: '#ecf0f1',
+            backgroundColor: '#2c3e50',
+            padding: { x: 30, y: 15 }
+        }).setOrigin(0.5).setDepth(6).setInteractive();
         
         botonCerrar.on('pointerover', () => {
-            botonCerrar.setStyle({ color: '#ffffff' });
+            botonCerrar.setBackgroundColor('#3498db');
+            botonCerrar.setColor('#ffffff');
         });
         
         botonCerrar.on('pointerout', () => {
-            botonCerrar.setStyle({ color: '#aaaaaa' });
+            botonCerrar.setBackgroundColor('#2c3e50');
+            botonCerrar.setColor('#ecf0f1');
         });
         
         botonCerrar.on('pointerdown', () => {
-            this.sound.play('sfx_texto', { volume: 0.2 });
-            panel.destroy();
-            titulo.destroy();
+            // Cerrar todo
+            fondoCreditos.destroy();
+            tituloCreditos.destroy();
             botonCerrar.destroy();
             
-            // Destruir todos los textos de créditos
+            // Destruir textos de créditos
             this.children.list.forEach(child => {
-                if (child.type === 'Text' && child !== titulo && child !== botonCerrar) {
+                if (child.type === 'Text' && child !== botonCerrar) {
                     child.destroy();
                 }
             });
         });
     }
     
+    mostrarMensajeTemporal(texto) {
+        const centerX = this.cameras.main.width / 2;
+        const mensaje = this.add.text(centerX, 620, texto, {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '18px',
+            color: '#f39c12',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            padding: { x: 20, y: 10 }
+        }).setOrigin(0.5).setDepth(10);
+        
+        this.tweens.add({
+            targets: mensaje,
+            alpha: 0,
+            duration: 800,
+            delay: 2000,
+            onComplete: () => mensaje.destroy()
+        });
+    }
+    
     salirDelJuego() {
-        // Efecto de salida
+        console.log('👋 Saliendo...');
+        
         this.cameras.main.fadeOut(1000, 0, 0, 0);
         
-        this.time.delayedCall(1000, () => {
-            // En un navegador, no podemos cerrar la ventana automáticamente
-            const mensaje = this.add.text(640, 360, '¡Gracias por jugar!', {
-                fontFamily: 'Courier New',
-                fontSize: '32px',
-                color: '#ffffff'
-            }).setOrigin(0.5);
-            
-            // Redirigir después de 2 segundos
-            this.time.delayedCall(2000, () => {
-                window.location.href = 'about:blank';
-            });
+        const centerX = this.cameras.main.width / 2;
+        const centerY = this.cameras.main.height / 2;
+        
+        const despedida = this.add.text(centerX, centerY, '¡Gracias por jugar!', {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '36px',
+            color: '#ffffff'
+        }).setOrigin(0.5).setDepth(10);
+        
+        this.time.delayedCall(2000, () => {
+            // En navegador, no podemos cerrar la ventana
+            despedida.setText('Recarga la página para volver a jugar');
+            despedida.setFontSize(24);
+            despedida.setY(centerY + 60);
         });
     }
     
     update() {
-        // Animaciones sutiles de botones
-        this.botones.forEach((boton, index) => {
-            const offset = Math.sin(this.time.now / 1000 + index) * 2;
-            boton.y = boton.y + (offset * 0.1);
-        });
+        // Animación sutil de botones
+        if (this.botones && this.botones.length > 0) {
+            this.botones.forEach((boton, index) => {
+                const tiempo = this.time.now / 1000;
+                const offset = Math.sin(tiempo * 2 + index) * 0.5;
+                boton.texto.y = boton.fondo.y + offset;
+            });
+        }
     }
 }
