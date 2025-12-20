@@ -129,35 +129,43 @@ export default class Memoria extends Phaser.Physics.Arcade.Sprite {
         });
     }
     
-    recolectar(jugador) {
-        if (this.recolectada) return;
+crearEfectoRecoleccion() {
+    // Efecto visual de recolección SIN partículas de Phaser
+    for (let i = 0; i < 25; i++) {
+        const particula = this.scene.add.circle(
+            this.x,
+            this.y,
+            Phaser.Math.Between(2, 8),
+            this.config.color,
+            0.9
+        );
         
-        console.log(`Recolectando recuerdo de ${this.tipo}`);
+        // Dirección aleatoria
+        const angle = Math.random() * Math.PI * 2;
+        const distancia = Phaser.Math.Between(40, 150);
+        const velocidad = Phaser.Math.Between(400, 800);
         
-        this.recolectada = true;
-        
-        // Mostrar diálogo
-        this.mostrarDialogo();
-        
-        // Efecto visual de recolección
-        this.crearEfectoRecoleccion();
-        
-        // Sonido
-        this.sonidoRecoleccion.play({ volume: 0.5 });
-        
-        // Aplicar efecto al jugador
-        this.aplicarEfecto(jugador);
-        
-        // Destruir después de un delay
-        this.scene.time.delayedCall(1000, () => {
-            this.destroy();
-            if (this.brillo) {
-                this.brillo.destroy();
-            }
+        this.scene.tweens.add({
+            targets: particula,
+            x: this.x + Math.cos(angle) * distancia,
+            y: this.y + Math.sin(angle) * distancia,
+            scale: 0,
+            alpha: 0,
+            duration: velocidad,
+            ease: 'Power2',
+            onComplete: () => particula.destroy()
         });
-        
-        return true;
     }
+    
+    // Efecto de expansión en el recuerdo
+    this.scene.tweens.add({
+        targets: this,
+        scale: 1.5,
+        alpha: 0,
+        duration: 400,
+        ease: 'Power2'
+    });
+}
     
     mostrarDialogo() {
         const dialogo = Phaser.Utils.Array.GetRandom(this.config.dialogo);
@@ -209,13 +217,13 @@ export default class Memoria extends Phaser.Physics.Arcade.Sprite {
         });
         
         // Detener y destruir partículas
-        this.scene.time.delayedCall(1000, () => {
-            emitter.stop();
-            this.scene.time.delayedCall(500, () => {
-                emitter.destroy();
-                particulas.destroy();
-            });
-        });
+        // this.scene.time.delayedCall(1000, () => {
+        //     emitter.stop();
+        //     this.scene.time.delayedCall(500, () => {
+        //         emitter.destroy();
+        //         particulas.destroy();
+        //     });
+        // });
     }
     
     aplicarEfecto(jugador) {

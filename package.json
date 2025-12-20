@@ -6,9 +6,14 @@
     "build": "parcel build index.html"
   },
   "devDependencies": {
-    "parcel": "^2.9.3"
+    "parcel": "^2.9.3",
+    "parcel-reporter-static-files-copy": "^1.5.3"
   },
   "dependencies": {
     "phaser": "^3.90.0"
+  },
+  "staticFiles": {
+    "staticPath": "assets",
+    "staticOutPath": "assets"
   }
 }

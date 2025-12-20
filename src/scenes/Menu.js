@@ -430,6 +430,8 @@ export class Menu extends Phaser.Scene {
             delay: 2000,
             onComplete: () => mensaje.destroy()
         });
+
+        
     }
     
     salirDelJuego() {

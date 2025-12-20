@@ -1,877 +1,662 @@
 export class Inicio extends Phaser.Scene {
     constructor() {
         super({ key: 'Inicio' });
-        this.plataformas = [];
-        this.coleccionables = [];
-        this.enemigos = [];
-        this.tileSize = 32;
-    }
-
-    preload() {
-        // Cargar el JSON del mapa si existe
-        this.load.json('mapaData', 'assets/mapas/inicio.json');
-        
-        // También puedes crear partículas simples
-        this.load.image('particula_estrella', 'assets/particles/star.png');
     }
 
     create() {
-        console.log('🎮 Escena Inicio cargada - Modo Dinámico');
-        
-        // Intentar cargar mapa desde JSON o crear uno procedimental
-        this.cargarMapaPersonalizado();
-        
-        // Crear jugador
+        console.log('🎮 Escena Inicio cargada - Modo Placeholder');
+
+        this.crearFondoConImagen();
+
+        // 1. Crear mundo básico
+        this.crearMundoBasico();
+
+        // 2. Crear jugador
         this.crearJugador();
-        
-        // Configurar física y colisiones
-        this.configurarFisica();
-        
-        // Configurar cámara
-        this.configurarCamara();
-        
-        // Controles
+
+        // 3. Configurar controles
         this.configurarControles();
-        
-        // UI del juego
-        this.crearUI();
-        
-        // Efectos visuales
-        this.crearEfectosAmbientales();
-        
-        // Música ambiente
-        this.iniciarMusicaAmbiente();
-        
-        console.log('✅ Mundo creado con éxito');
+
+        // 4. Configurar cámara
+        this.configurarCamara();
+
+        // 5. Crear UI básica
+        this.crearUIBasica();
+
+        // 6. Mostrar instrucciones
+        this.mostrarInstrucciones();
+
+        console.log('✅ Escena lista para jugar');
+
+        // estas 2 lineas son para ver hitbox
+        this.physics.world.createDebugGraphic();
+        this.physics.world.drawDebug = true;
     }
+
+    crearFondoConImagen() {
+    console.log('🖼️ Creando fondo...');
     
-    cargarMapaPersonalizado() {
-        try {
-            const mapaData = this.cache.json.get('mapaData');
-            console.log('🗺️ Mapa cargado desde JSON:', mapaData.metadata.name);
-            this.crearMapaDesdeJSON(mapaData);
-        } catch (error) {
-            console.log('⚠️ No se pudo cargar mapa, generando uno procedimental');
-            this.crearMapaProcedimental();
-        }
-    }
-    
-    crearMapaDesdeJSON(mapaData) {
-        const { layers, metadata } = mapaData;
-        this.tileSize = metadata.tile_size || 64;
+    // Verificar si la textura existe
+    if (this.textures.exists('mi_fondo')) {
+        console.log('✅ Usando imagen de fondo real');
         
-        // Fondo con gradiente
-        this.crearFondoGradiente();
+        // Crear fondo con tu imagen
+        this.fondo = this.add.image(640, 360, 'mi_fondo');
         
-        // Crear capa de background
-        if (layers.background) {
-            this.crearCapaBackground(layers.background);
-        }
+        // Ajustar al tamaño de la pantalla
+        this.fondo.setDisplaySize(1280, 720);
+        this.fondo.setDepth(-100); // Muy al fondo
         
-        // Crear plataformas
-        if (layers.platforms) {
-            this.crearPlataformasJSON(layers.platforms);
-        }
+        // Opcional: si quieres que el fondo se mueva con la cámara (parallax)
+        this.fondo.setScrollFactor(0.1); // Se mueve muy lentamente
         
-        // Crear obstáculos
-        if (layers.obstacles) {
-            this.crearObstaculosJSON(layers.obstacles);
-        }
+    } else {
+        console.log('⚠️ Usando fondo placeholder');
         
-        // Crear coleccionables
-        if (layers.collectibles) {
-            this.crearColeccionablesJSON(layers.collectibles);
-        }
-        
-        // Configurar zonas
-        if (layers.zones) {
-            this.crearZonasJSON(layers.zones);
-        }
-        
-        // Configurar punto de spawn del jugador
-        this.spawnPoint = {
-            x: (layers.player?.spawn_x || 2) * this.tileSize,
-            y: (layers.player?.spawn_y || 16) * this.tileSize
-        };
-    }
-    
-    crearMapaProcedimental() {
-        // Fondo con gradiente emocional
-        this.crearFondoGradiente();
-        
-        // Tamaño del mundo
-        const worldWidth = 2560;
-        const worldHeight = 720;
-        
-        // Suelo principal
-        const suelo = this.add.rectangle(0, worldHeight - 50, worldWidth * 2, 100, 0x5d4037);
-        this.physics.add.existing(suelo, true);
-        suelo.y = worldHeight - 50;
-        suelo.body.updateCenter();
-        
-        // Plataformas procedimentales
-        this.crearPlataformasProcedimentales(worldWidth);
-        
-        // Coleccionables procedimentales
-        this.crearColeccionablesProcedimentales();
-        
-        // Enemigos básicos
-        this.crearEnemigosProcedimentales();
-        
-        // Punto de spawn
-        this.spawnPoint = { x: 200, y: 500 };
-    }
-    
-    crearFondoGradiente() {
-        // Cielo con gradiente
-        const gradient = this.add.graphics();
-        const colors = [0x87CEEB, 0x4682B4, 0x1E3A5F];
-        
-        gradient.fillGradientStyle(
-            colors[0], colors[0],
-            colors[2], colors[2],
+        // Fondo de emergencia (igual que antes)
+        const graphics = this.add.graphics();
+        graphics.fillGradientStyle(
+            0x1a1a2e, 0x1a1a2e, // Color superior
+            0x16213e, 0x16213e, // Color inferior
             1, 1, 1, 1
         );
-        gradient.fillRect(0, 0, 2560, 720);
+        graphics.fillRect(0, 0, 1280, 720);
         
-        // Nubes decorativas
-        for (let i = 0; i < 15; i++) {
-            const x = Phaser.Math.Between(0, 2560);
-            const y = Phaser.Math.Between(50, 200);
-            const size = Phaser.Math.Between(30, 80);
+        // Estrellas de fondo (placeholder)
+        for (let i = 0; i < 60; i++) {
+            const x = Phaser.Math.Between(0, 1280);
+            const y = Phaser.Math.Between(0, 720);
+            const size = Phaser.Math.FloatBetween(0.5, 2);
+            const alpha = Phaser.Math.FloatBetween(0.1, 0.4);
             
-            const cloud = this.add.ellipse(x, y, size, size/2, 0xffffff, 0.7);
-            cloud.setDepth(-1);
+            const star = this.add.circle(x, y, size, 0xffffff, alpha);
+            star.setDepth(-99);
             
-            // Animación de nubes
             this.tweens.add({
-                targets: cloud,
-                x: x + Phaser.Math.Between(100, 300),
-                duration: Phaser.Math.Between(15000, 30000),
+                targets: star,
+                alpha: { from: alpha, to: alpha * 0.5 },
+                duration: Phaser.Math.Between(2000, 4000),
                 yoyo: true,
                 repeat: -1,
-                ease: 'Sine.easeInOut'
+                delay: Phaser.Math.Between(0, 3000)
             });
         }
     }
-    
-    crearCapaBackground(backgroundLayer) {
-        const width = backgroundLayer[0].length;
-        const height = backgroundLayer.length;
-        
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                if (backgroundLayer[y][x] === 1) {
-                    const block = this.add.rectangle(
-                        x * this.tileSize + this.tileSize/2,
-                        y * this.tileSize + this.tileSize/2,
-                        this.tileSize, this.tileSize,
-                        0x2c3e50,
-                        0.8
-                    );
-                    block.setStrokeStyle(1, 0x3498db, 0.5);
-                }
-            }
-        }
-    }
-    
-    crearPlataformasJSON(platformsData) {
-        platformsData.forEach(plat => {
-            const x = plat.x * this.tileSize + (plat.width * this.tileSize)/2;
-            const y = plat.y * this.tileSize + (plat.height * this.tileSize)/2;
-            const width = plat.width * this.tileSize;
-            const height = plat.height * this.tileSize;
-            
-            let platform;
-            
-            switch(plat.type) {
-                case 'static':
-                    platform = this.add.rectangle(x, y, width, height, 0x27ae60, 0.9);
-                    platform.setStrokeStyle(2, 0x2ecc71);
-                    break;
-                    
-                case 'moving_horizontal':
-                    platform = this.add.rectangle(x, y, width, height, 0xf39c12, 0.9);
-                    platform.setStrokeStyle(2, 0xe67e22);
-                    
-                    // Movimiento horizontal
-                    this.tweens.add({
-                        targets: platform,
-                        x: x + (plat.range * this.tileSize),
-                        duration: 2000,
-                        yoyo: true,
-                        repeat: -1,
-                        ease: 'Sine.easeInOut'
-                    });
-                    break;
-                    
-                case 'moving_vertical':
-                    platform = this.add.rectangle(x, y, width, height, 0x9b59b6, 0.9);
-                    platform.setStrokeStyle(2, 0x8e44ad);
-                    
-                    // Movimiento vertical
-                    this.tweens.add({
-                        targets: platform,
-                        y: y + (plat.range * this.tileSize),
-                        duration: 1500,
-                        yoyo: true,
-                        repeat: -1,
-                        ease: 'Sine.easeInOut'
-                    });
-                    break;
-                    
-                case 'fragile':
-                    platform = this.add.rectangle(x, y, width, height, 0xe74c3c, 0.8);
-                    platform.setStrokeStyle(1, 0xc0392b);
-                    
-                    // Efecto de parpadeo para plataformas frágiles
-                    this.tweens.add({
-                        targets: platform,
-                        alpha: 0.6,
-                        duration: 500,
-                        yoyo: true,
-                        repeat: -1
-                    });
-                    break;
-                    
-                default:
-                    platform = this.add.rectangle(x, y, width, height, 0x95a5a6, 0.9);
-            }
-            
-            // Añadir física
-            if (plat.type !== 'moving_horizontal' && plat.type !== 'moving_vertical') {
-                this.physics.add.existing(platform, true);
-            } else {
-                this.physics.add.existing(platform, true);
-                platform.body.setImmovable(true);
-            }
-            
-            this.plataformas.push(platform);
+}
+
+    crearMundoBasico() {
+
+            const getKey = (base) => {
+        const real = `${base}_real`;
+        return this.textures.exists(real) ? real : base;
+    };
+
+        // Suelo principal
+            this.suelo = this.physics.add.staticSprite(640, 700, getKey('plataforma_basica'));
+        this.suelo.displayWidth = 1280;
+        this.suelo.displayHeight = 40;
+        this.suelo.refreshBody();
+        this.suelo.body.setSize(1280, 40);
+
+        // Plataformas flotantes
+    const plataformas = [
+        { x: 300, y: 550, type: getKey('plataforma_basica'), width: 200, fragil: false },
+        { x: 600, y: 450, type: getKey('plataforma_movil'), width: 180, fragil: false },
+        { x: 900, y: 350, type: getKey('plataforma_fragil'), width: 160, fragil: true },
+        { x: 1100, y: 500, type: getKey('plataforma_basica'), width: 150, fragil: false }
+    ];
+
+        this.plataformasGrupo = this.physics.add.group({
+            immovable: true,
+            allowGravity: false
         });
-    }
-    
-    crearPlataformasProcedimentales(worldWidth) {
-        const platformTypes = [
-            { color: 0x27ae60, height: 20 }, // Normal
-            { color: 0xf39c12, height: 20 }, // Movible
-            { color: 0x9b59b6, height: 15 }, // Delgada
-            { color: 0x3498db, height: 25 }  // Ancha
-        ];
-        
-        let lastX = 200;
-        for (let i = 0; i < 15; i++) {
-            const type = platformTypes[Phaser.Math.Between(0, platformTypes.length - 1)];
-            const width = Phaser.Math.Between(80, 200);
-            const x = lastX + Phaser.Math.Between(150, 300);
-            const y = Phaser.Math.Between(300, 550);
-            
-            const platform = this.add.rectangle(x, y, width, type.height, type.color, 0.9);
-            platform.setStrokeStyle(2, Phaser.Display.Color.GetColor(
-                type.color >> 16,
-                (type.color >> 8) & 0xFF,
-                type.color & 0xFF
-            ));
-            
-            this.physics.add.existing(platform, true);
-            this.plataformas.push(platform);
-            
-            lastX = x;
-            
-            // Algunas plataformas con movimiento
-            if (Math.random() > 0.7) {
+
+        plataformas.forEach(p => {
+            const plat = this.physics.add.sprite(p.x, p.y, p.type);
+            plat.displayWidth = p.width;
+            plat.displayHeight = 20;
+
+            // CONFIGURAR CUERPO FÍSICO
+            plat.body.setImmovable(true);
+            plat.body.setAllowGravity(false);
+
+            // ✅ AÑADIR PROPIEDAD FRÁGIL
+            plat.esFragil = p.fragil || false;
+            plat.contador = null;
+            plat.textoContador = null;
+            plat.timerDestruccion = null; // ✅ Añadido para el timer
+
+            // AÑADIR AL GRUPO
+            this.plataformasGrupo.add(plat);
+
+            // Animación para plataforma móvil
+            if (p.type === 'plataforma_movil') {
                 this.tweens.add({
-                    targets: platform,
-                    y: y + Phaser.Math.Between(-50, 50),
-                    duration: Phaser.Math.Between(2000, 4000),
+                    targets: plat,
+                    y: p.y - 50,
+                    duration: 2000,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: 'Sine.easeInOut',
+                    onUpdate: () => {
+                        plat.body.updateFromGameObject();
+                    }
+                });
+            }
+
+            // Animación para plataforma frágil (parpadeo sutil)
+            if (p.type === 'plataforma_fragil') {
+                this.tweens.add({
+                    targets: plat,
+                    alpha: 0.8,
+                    duration: 800,
                     yoyo: true,
                     repeat: -1,
                     ease: 'Sine.easeInOut'
                 });
             }
-        }
-    }
-    
-    crearObstaculosJSON(obstaclesData) {
-        obstaclesData.forEach(obs => {
-            const x = obs.x * this.tileSize + this.tileSize/2;
-            const y = obs.y * this.tileSize + this.tileSize/2;
-            
-            let obstacle;
-            
-            switch(obs.type) {
-                case 'spikes':
-                    obstacle = this.add.triangle(x, y, 0, 0, this.tileSize, 0, this.tileSize/2, this.tileSize, 0xe74c3c);
-                    break;
-                    
-                case 'patrol_enemy':
-                    obstacle = this.add.rectangle(x, y, this.tileSize, this.tileSize, 0x8e44ad, 0.9);
-                    obstacle.setStrokeStyle(2, 0x9b59b6);
-                    
-                    // Movimiento de patrulla
-                    this.tweens.add({
-                        targets: obstacle,
-                        x: x + (obs.range * this.tileSize),
-                        duration: (obs.range * this.tileSize) / obs.speed * 1000,
-                        yoyo: true,
-                        repeat: -1,
-                        ease: 'Linear'
-                    });
-                    break;
-                    
-                case 'boost':
-                    obstacle = this.add.circle(x, y, this.tileSize/2, 0xf1c40f);
-                    
-                    // Animación de pulso
-                    this.tweens.add({
-                        targets: obstacle,
-                        scale: 1.3,
-                        duration: 500,
-                        yoyo: true,
-                        repeat: -1,
-                        ease: 'Sine.easeInOut'
-                    });
-                    break;
-                    
-                default:
-                    obstacle = this.add.rectangle(x, y, this.tileSize, this.tileSize, 0x7f8c8d);
-            }
-            
-            this.physics.add.existing(obstacle, true);
-            this.enemigos.push(obstacle);
         });
-    }
-    
-    crearColeccionablesJSON(collectiblesData) {
-        collectiblesData.forEach(item => {
-            const x = item.x * this.tileSize + this.tileSize/2;
-            const y = item.y * this.tileSize + this.tileSize/2;
-            
-            let collectible;
-            
-            switch(item.type) {
-                case 'coin':
-                    collectible = this.add.circle(x, y, 10, 0xf1c40f);
-                    collectible.setStrokeStyle(2, 0xf39c12);
-                    
-                    // Animación de giro
-                    this.tweens.add({
-                        targets: collectible,
-                        angle: 360,
-                        duration: 2000,
-                        repeat: -1,
-                        ease: 'Linear'
-                    });
-                    break;
-                    
-                case 'health':
-                    collectible = this.add.rectangle(x, y, 20, 20, 0xe74c3c);
-                    collectible.setStrokeStyle(2, 0xc0392b);
-                    
-                    // Animación de flotación
-                    this.tweens.add({
-                        targets: collectible,
-                        y: y - 15,
-                        duration: 1000,
-                        yoyo: true,
-                        repeat: -1,
-                        ease: 'Sine.easeInOut'
-                    });
-                    break;
-                    
-                case 'save_point':
-                    collectible = this.add.rectangle(x, y, this.tileSize, this.tileSize * 2, 0x2ecc71, 0.5);
-                    collectible.setStrokeStyle(3, 0x27ae60);
-                    
-                    // Animación de pulso
-                    this.tweens.add({
-                        targets: collectible,
-                        alpha: 0.8,
-                        duration: 800,
-                        yoyo: true,
-                        repeat: -1
-                    });
-                    break;
-            }
-            
-            if (collectible) {
-                this.physics.add.existing(collectible, true);
-                this.coleccionables.push(collectible);
-            }
-        });
-    }
-    
-    crearColeccionablesProcedimentales() {
-        const collectibleTypes = [
-            { shape: 'circle', color: 0xf1c40f, size: 10 }, // Moneda
-            { shape: 'diamond', color: 0x9b59b6, size: 12 }, // Gema
-            { shape: 'heart', color: 0xe74c3c, size: 15 }    // Vida
+
+        // Crear algunos recuerdos para recolectar
+        this.recuerdosGrupo = this.physics.add.staticGroup();
+        const posicionesRecuerdos = [
+            { x: 350, y: 500 },
+            { x: 650, y: 400 },
+            { x: 950, y: 300 },
+            { x: 1150, y: 450 }
         ];
-        
-        for (let i = 0; i < 20; i++) {
-            const type = collectibleTypes[Phaser.Math.Between(0, collectibleTypes.length - 1)];
-            const x = Phaser.Math.Between(300, 2000);
-            const y = Phaser.Math.Between(200, 600);
-            
-            let collectible;
-            
-            if (type.shape === 'circle') {
-                collectible = this.add.circle(x, y, type.size, type.color);
-            } else if (type.shape === 'diamond') {
-                collectible = this.add.rectangle(x, y, type.size, type.size, type.color);
-                collectible.angle = 45;
-            } else {
-                collectible = this.add.triangle(x, y, 0, -type.size, -type.size/2, type.size/3, type.size/2, type.size/3, type.color);
-            }
-            
-            // Animación de flotación
-            this.tweens.add({
-                targets: collectible,
-                y: y - 10,
-                duration: 1500,
-                yoyo: true,
-                repeat: -1,
-                ease: 'Sine.easeInOut'
-            });
-            
-            // Animación de rotación
-            this.tweens.add({
-                targets: collectible,
-                angle: 360,
-                duration: 3000,
-                repeat: -1,
-                ease: 'Linear'
-            });
-            
-            this.physics.add.existing(collectible, true);
-            this.coleccionables.push(collectible);
-        }
-    }
-    
-    crearEnemigosProcedimentales() {
-        const enemyTypes = [
-            { color: 0xe74c3c, size: 25, speed: 1 }, // Rojo - rápido
-            { color: 0x3498db, size: 35, speed: 0.5 }, // Azul - lento
-            { color: 0x9b59b6, size: 30, speed: 0.7 }  // Morado - medio
+
+        posicionesRecuerdos.forEach(pos => {
+        const recuerdo = this.add.sprite(pos.x, pos.y, getKey('recuerdo'));
+            this.physics.add.existing(recuerdo, true);
+            this.recuerdosGrupo.add(recuerdo);
+        });
+
+        // Crear algunos enemigos básicos
+        this.enemigosGrupo = this.physics.add.group();
+        const enemigos = [
+            { x: 500, y: 620, tipo: 'enemigo_miedo' },
+            { x: 800, y: 620, tipo: 'enemigo_duda' },
+            { x: 1200, y: 620, tipo: 'enemigo_celos' }
         ];
-        
-        for (let i = 0; i < 8; i++) {
-            const type = enemyTypes[Phaser.Math.Between(0, enemyTypes.length - 1)];
-            const x = Phaser.Math.Between(500, 2200);
-            const y = Phaser.Math.Between(200, 600);
-            
-            const enemy = this.add.circle(x, y, type.size, type.color);
-            enemy.setStrokeStyle(2, 0xffffff);
-            
-            // Ojos del enemigo
-            this.add.circle(x - 8, y - 5, 5, 0x000000);
-            this.add.circle(x + 8, y - 5, 5, 0x000000);
-            
-            // Movimiento de patrulla
-            this.tweens.add({
-                targets: enemy,
-                x: x + Phaser.Math.Between(100, 300),
-                duration: 3000 / type.speed,
-                yoyo: true,
-                repeat: -1,
-                ease: 'Sine.easeInOut'
+
+enemigos.forEach(e => {
+        const enemigo = this.physics.add.sprite(e.x, e.y, getKey(e.tipo));
+            this.enemigosGrupo.add(enemigo);
+
+            // Configurar propiedades del cuerpo
+            enemigo.body.setImmovable(true);
+            enemigo.body.setAllowGravity(false);
+            enemigo.body.setCollideWorldBounds(true);
+
+            // Movimiento simple de patrulla
+            let movingRight = true;
+            this.time.addEvent({
+                delay: 2000,
+                callback: () => {
+                    movingRight = !movingRight;
+                    enemigo.setVelocityX(movingRight ? 50 : -50);
+                    enemigo.flipX = !movingRight;
+                },
+                loop: true,
+                startAt: 2000
             });
-            
-            this.physics.add.existing(enemy, true);
-            enemy.body.setImmovable(true);
-            this.enemigos.push(enemy);
-        }
-    }
-    
-    crearZonasJSON(zonesData) {
-        zonesData.forEach(zone => {
-            const x = zone.x * this.tileSize;
-            const y = zone.y * this.tileSize;
-            const width = zone.width * this.tileSize;
-            const height = zone.height * this.tileSize;
-            
-            // Crear área visual (solo para debug)
-            const zoneRect = this.add.rectangle(
-                x + width/2, 
-                y + height/2, 
-                width, 
-                height, 
-                0x3498db, 
-                0.1
-            );
-            zoneRect.setStrokeStyle(2, 0x3498db, 0.3);
-            
-            // Texto de la zona
-            const zoneText = this.add.text(
-                x + width/2, 
-                y - 20, 
-                zone.name, 
-                { 
-                    fontSize: '16px', 
-                    color: '#3498db',
-                    backgroundColor: 'rgba(0,0,0,0.5)',
-                    padding: { x: 5, y: 3 }
-                }
-            );
-            zoneText.setOrigin(0.5);
         });
     }
-    
+
     crearJugador() {
-        this.jugador = this.add.circle(this.spawnPoint.x, this.spawnPoint.y, 20, 0x3498db);
+
+            const getKey = (base) => {
+        const real = `${base}_real`;
+        return this.textures.exists(real) ? real : base;
+    };
+        // Crear sprite del protagonista
+            this.jugador = this.add.sprite(200, 500, getKey('protagonista'));
+        this.jugador.play('quieto');
+
+        // Añadir física
         this.physics.add.existing(this.jugador);
+
+        // Configurar cuerpo de física
+        this.jugador.body.setSize(28, 42);
+        this.jugador.body.setOffset(2, 6);
         this.jugador.body.setCollideWorldBounds(true);
-        
-        // Contorno del jugador
-        this.jugador.setStrokeStyle(3, 0x2980b9);
-        
-        // Ojos del jugador
-        this.ojos = {
-            izquierdo: this.add.circle(this.jugador.x - 8, this.jugador.y - 5, 5, 0xffffff),
-            derecho: this.add.circle(this.jugador.x + 8, this.jugador.y - 5, 5, 0xffffff)
-        };
-        
-        // Pupilas
-        this.pupilas = {
-            izquierda: this.add.circle(this.jugador.x - 8, this.jugador.y - 5, 2, 0x000000),
-            derecha: this.add.circle(this.jugador.x + 8, this.jugador.y - 5, 2, 0x000000)
-        };
-    }
-    
-    configurarFisica() {
-        // Colisiones con plataformas
-        this.plataformas.forEach(plat => {
-            this.physics.add.collider(this.jugador, plat);
+        this.jugador.body.setGravityY(300);
+
+        // ✅ COLISIÓN CON PLATAFORMAS (CON DETECCIÓN DE FRÁGILES)
+        this.physics.add.collider(
+            this.jugador, 
+            this.plataformasGrupo,
+            (jugador, plataforma) => {
+                // Detectar si es plataforma frágil y el jugador está encima
+                if (plataforma.esFragil && 
+                    jugador.body.touching.down && 
+                    plataforma.body.touching.up) {
+                    this.activarPlataformaFragil(plataforma);
+                }
+            }
+        );
+
+        // Colisión con suelo
+        this.physics.add.collider(this.jugador, this.suelo);
+
+        // Colisión con enemigos (daño)
+        this.physics.add.collider(this.jugador, this.enemigosGrupo, (jugador, enemigo) => {
+            this.recibirDano();
         });
-        
-        // Colisiones con enemigos (daño)
-        this.enemigos.forEach(enemy => {
-            this.physics.add.overlap(this.jugador, enemy, () => {
-                this.recibirDano();
-            });
+
+        // Overlap con recuerdos (recolección)
+        this.physics.add.overlap(this.jugador, this.recuerdosGrupo, (jugador, recuerdo) => {
+            this.recolectarRecuerdo(recuerdo);
         });
-        
-        // Coleccionables
-        this.coleccionables.forEach(item => {
-            this.physics.add.overlap(this.jugador, item, (player, collectible) => {
-                this.recolectarItem(collectible);
-            });
-        });
+
+        // ✅ Inicializar flag de invulnerabilidad
+        this.invulnerable = false;
     }
-    
-    configurarCamara() {
-        this.cameras.main.setBounds(0, 0, 2560, 720);
-        this.cameras.main.startFollow(this.jugador, true, 0.05, 0.05);
-        this.cameras.main.setZoom(1);
-    }
-    
+
     configurarControles() {
         this.cursors = this.input.keyboard.createCursorKeys();
         this.spaceBar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-        
-        // Teclas adicionales para habilidades
         this.teclaE = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
         this.teclaR = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
-        this.teclaF = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
+        console.log('🎮 Controles configurados: Flechas + ESPACIO');
     }
-    
-    crearUI() {
-        // Barra de vida
-        this.vida = 100;
-        this.barraVida = this.add.rectangle(100, 30, 200, 20, 0xe74c3c);
-        this.barraVidaFondo = this.add.rectangle(100, 30, 204, 24, 0x000000, 0.5);
-        this.barraVidaFondo.setStrokeStyle(2, 0xffffff);
-        
-        // Texto de vida
-        this.textoVida = this.add.text(100, 30, '100/100', {
-            fontSize: '14px',
-            color: '#ffffff'
-        }).setOrigin(0.5);
-        
-        // Contador de coleccionables
-        this.coleccionablesRecolectados = 0;
-        this.textoColeccionables = this.add.text(200, 60, 'Coleccionables: 0', {
-            fontSize: '16px',
-            color: '#f1c40f'
-        });
-        
-        // Instrucciones
-        this.add.text(20, 100, 'Controles:', {
-            fontSize: '14px',
-            color: '#bdc3c7'
-        });
-        this.add.text(20, 120, '←→ Moverse', { fontSize: '12px', color: '#95a5a6' });
-        this.add.text(20, 140, '↑ Saltar', { fontSize: '12px', color: '#95a5a6' });
-        this.add.text(20, 160, 'E Escuchar', { fontSize: '12px', color: '#95a5a6' });
-        this.add.text(20, 180, 'R Recordar', { fontSize: '12px', color: '#95a5a6' });
-        
-        // Título de la zona
-        this.tituloZona = this.add.text(640, 50, 'ZONA DE INICIO', {
-            fontSize: '28px',
-            color: '#ffffff',
-            stroke: '#3498db',
-            strokeThickness: 4
-        }).setOrigin(0.5).setScrollFactor(0);
-        
-        // Botón de pausa/menú
-        const botonMenu = this.add.text(1250, 30, 'II', {
+
+    configurarCamara() {
+        this.cameras.main.startFollow(this.jugador, true, 0.08, 0.08);
+        this.cameras.main.setBounds(0, 0, 1280, 720);
+        this.physics.world.setBounds(0, 0, 1280, 720);
+    }
+
+    crearUIBasica() {
+        this.recuerdosRecolectados = 0;
+        this.textoRecuerdos = this.add.text(20, 20, 'Recuerdos: 0', {
             fontSize: '24px',
+            color: '#f1c40f',
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setScrollFactor(0);
+
+        this.vida = 100;
+        this.barraVida = this.add.rectangle(150, 35, 100, 15, 0x2ecc71);
+        this.barraVida.setScrollFactor(0);
+
+        const botonMenu = this.add.text(1200, 20, 'Menú', {
+            fontSize: '20px',
             color: '#ffffff',
-            backgroundColor: '#2c3e50',
-            padding: { x: 10, y: 5 }
-        }).setOrigin(0.5).setScrollFactor(0).setInteractive();
-        
+            backgroundColor: '#e74c3c',
+            padding: { x: 15, y: 8 }
+        }).setScrollFactor(0).setInteractive();
+
         botonMenu.on('pointerdown', () => {
-            this.scene.pause();
-            this.scene.launch('MenuPausa');
+            this.scene.start('Menu');
         });
     }
-    
-    crearEfectosAmbientales() {
-        // Partículas de ambiente
-        this.particulas = this.add.particles('particula_estrella');
-        
-        this.emitter = this.particulas.createEmitter({
-            x: { min: 0, max: 2560 },
-            y: 0,
-            lifespan: 4000,
-            speedY: { min: 20, max: 50 },
-            scale: { start: 0.2, end: 0 },
-            quantity: 1,
-            frequency: 100,
-            blendMode: 'ADD'
+
+    mostrarInstrucciones() {
+        const instrucciones = this.add.text(20, 60, 
+            'Controles:\n← → Moverse\n↑ Saltar\nE Escuchar\nR Recordar',
+            {
+                fontSize: '16px',
+                color: '#ffffff',
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                padding: { x: 10, y: 5 }
+            }
+        ).setScrollFactor(0);
+
+        this.time.delayedCall(10000, () => {
+            this.tweens.add({
+                targets: instrucciones,
+                alpha: 0,
+                duration: 1000,
+                onComplete: () => instrucciones.destroy()
+            });
         });
-        
-        // Efecto de viento en las nubes (ya creadas en el fondo)
     }
-    
-    iniciarMusicaAmbiente() {
-        // Música de fondo (si existe)
-        try {
-            this.musica = this.sound.add('musica_inicio', { volume: 0.3, loop: true });
-            this.musica.play();
-        } catch (error) {
-            console.log('🎵 Modo sin música');
+
+    // ========== MÉTODO NUEVO PARA ACTIVAR PLATAFORMAS FRÁGILES ==========
+    activarPlataformaFragil(plat) {
+        // Solo activar si no tiene contador activo
+        if (!plat.contador) {
+            console.log('🔴 Activando plataforma frágil en:', plat.x, plat.y);
+            
+            plat.contador = 180; // 3 segundos a 60 FPS
+            plat.setTint(0xff6666);
+            this.mostrarContadorPlataforma(plat);
+            
+            // Crear timer que reduce el contador
+            plat.timerDestruccion = this.time.addEvent({
+                delay: 16, // ~60 FPS
+                callback: () => {
+                    plat.contador--;
+                    
+                    // Efecto de parpadeo más intenso cerca del final
+                    if (plat.contador < 60) {
+                        plat.alpha = (plat.contador % 10 < 5) ? 0.4 : 1;
+                    }
+                    
+                    // Actualizar texto del contador
+                    if (plat.textoContador) {
+                        const segundos = Math.ceil(plat.contador / 60);
+                        plat.textoContador.setText(segundos.toString());
+                    }
+                    
+                    // Destruir cuando llegue a 0
+                    if (plat.contador <= 0) {
+                        console.log('💥 Destruyendo plataforma!');
+                        plat.timerDestruccion.remove();
+                        this.destruirPlataformaSimple(plat);
+                    }
+                },
+                loop: true
+            });
         }
     }
-    
+
+    resetearPlataformaFragil(plat) {
+        if (plat.contador) {
+            plat.contador = null;
+            plat.clearTint();
+            plat.alpha = 1;
+            
+            if (plat.timerDestruccion) {
+                plat.timerDestruccion.remove();
+                plat.timerDestruccion = null;
+            }
+            
+            if (plat.textoContador) {
+                plat.textoContador.destroy();
+                plat.textoContador = null;
+            }
+        }
+    }
+
+    mostrarContadorPlataforma(plat) {
+        plat.textoContador = this.add.text(
+            plat.x,
+            plat.y - 35,
+            '3',
+            {
+                fontSize: '24px',
+                fontStyle: 'bold',
+                color: '#ff0000',
+                stroke: '#000',
+                strokeThickness: 4
+            }
+        ).setOrigin(0.5);
+    }
+
+    destruirPlataformaSimple(plat) {
+        if (!plat || !plat.body) return;
+
+        console.log('💥 Destruyendo plataforma frágil en:', plat.x, plat.y);
+
+        // Efecto visual de destrucción con círculos simples
+        for (let i = 0; i < 15; i++) {
+            const angulo = Phaser.Math.Between(0, 360);
+            const velocidad = Phaser.Math.Between(50, 150);
+            const velocidadX = Math.cos(angulo * Math.PI / 180) * velocidad;
+            const velocidadY = Math.sin(angulo * Math.PI / 180) * velocidad;
+
+            const particula = this.add.circle(
+                plat.x + Phaser.Math.Between(-10, 10),
+                plat.y + Phaser.Math.Between(-5, 5),
+                Phaser.Math.Between(3, 6),
+                0xff6666
+            );
+
+            this.tweens.add({
+                targets: particula,
+                x: particula.x + velocidadX,
+                y: particula.y + velocidadY,
+                alpha: 0,
+                scale: 0,
+                duration: 800,
+                ease: 'Power2',
+                onComplete: () => particula.destroy()
+            });
+        }
+
+        // Sonido o feedback
+        this.cameras.main.shake(200, 0.01);
+
+        // Mensaje visual
+        const textoExplosion = this.add.text(
+            plat.x,
+            plat.y,
+            '💥',
+            {
+                fontSize: '32px'
+            }
+        ).setOrigin(0.5);
+
+        this.tweens.add({
+            targets: textoExplosion,
+            scale: 2,
+            alpha: 0,
+            duration: 600,
+            onComplete: () => textoExplosion.destroy()
+        });
+
+        // Eliminar texto del contador
+        if (plat.textoContador) {
+            plat.textoContador.destroy();
+        }
+
+        // Destruir la plataforma
+        plat.destroy();
+    }
+
     recibirDano() {
         if (this.invulnerable) return;
-        
+
         this.vida -= 10;
         if (this.vida < 0) this.vida = 0;
-        
-        // Actualizar barra de vida
-        this.barraVida.width = (this.vida / 100) * 200;
-        this.textoVida.setText(`${this.vida}/100`);
-        
-        // Efecto visual de daño
-        this.jugador.setFillStyle(0xe74c3c);
-        this.tweens.add({
-            targets: this.jugador,
-            fillColor: 0x3498db,
-            duration: 300
+
+        this.barraVida.width = this.vida;
+        this.barraVida.fillColor = this.vida > 50 ? 0x2ecc71 : this.vida > 25 ? 0xf39c12 : 0xe74c3c;
+
+        this.jugador.setTint(0xff0000);
+
+        if (this.jugador.body.velocity.x >= 0) {
+            this.jugador.body.setVelocityX(-200);
+        } else {
+            this.jugador.body.setVelocityX(200);
+        }
+        this.jugador.body.setVelocityY(-150);
+
+        this.time.delayedCall(300, () => {
+            this.jugador.clearTint();
         });
-        
-        // Invulnerabilidad temporal
+
         this.invulnerable = true;
         this.time.delayedCall(1000, () => {
             this.invulnerable = false;
         });
-        
-        // Game Over si la vida llega a 0
+
         if (this.vida <= 0) {
             this.gameOver();
         }
     }
-    
-    recolectarItem(item) {
-        this.coleccionablesRecolectados++;
-        this.textoColeccionables.setText(`Coleccionables: ${this.coleccionablesRecolectados}`);
-        
-        // Efecto de partículas al recolectar
-        const emitter = this.add.particles('particula_estrella').createEmitter({
-            x: item.x,
-            y: item.y,
-            speed: { min: -50, max: 50 },
-            scale: { start: 0.5, end: 0 },
-            lifespan: 500,
-            quantity: 10
-        });
-        emitter.explode();
-        
-        // Sonido de coleccionable
-        try {
-            this.sound.play('sfx_recuerdo_recolectado', { volume: 0.3 });
-        } catch (e) {}
-        
-        // Destruir el item
-        item.destroy();
-        
-        // Eliminar de la lista
-        const index = this.coleccionables.indexOf(item);
-        if (index > -1) {
-            this.coleccionables.splice(index, 1);
+
+    recolectarRecuerdo(recuerdo) {
+        if (recuerdo.recolectar && typeof recuerdo.recolectar === 'function') {
+            recuerdo.recolectar(this.jugador);
+            this.recuerdosRecolectados++;
+            this.textoRecuerdos.setText(`Recuerdos: ${this.recuerdosRecolectados}`);
+            this.mostrarFeedbackRecuerdo();
+        } else {
+            this.recuerdosRecolectados++;
+            this.textoRecuerdos.setText(`Recuerdos: ${this.recuerdosRecolectados}`);
+            this.mostrarFeedbackRecuerdo();
+
+            const efecto = this.add.circle(recuerdo.x, recuerdo.y, 20, 0xF1C40F, 0.6);
+            this.tweens.add({
+                targets: efecto,
+                scale: 3,
+                alpha: 0,
+                duration: 500,
+                onComplete: () => efecto.destroy()
+            });
+
+            recuerdo.destroy();
         }
     }
-    
+
+    mostrarFeedbackRecuerdo() {
+        const feedback = this.add.text(
+            this.jugador.x,
+            this.jugador.y - 50,
+            '+1 ',
+            {
+                fontSize: '18px',
+                fontStyle: 'bold',
+                color: '#F1C40F',
+                stroke: '#000',
+                strokeThickness: 4
+            }
+        ).setOrigin(0.5);
+
+        this.tweens.add({
+            targets: feedback,
+            y: feedback.y - 60,
+            alpha: 0,
+            duration: 1200,
+            ease: 'Power2',
+            onComplete: () => feedback.destroy()
+        });
+    }
+
     gameOver() {
         console.log('💀 Game Over');
-        
-        // Efecto de fade out
-        this.cameras.main.fadeOut(1000, 0, 0, 0);
-        
-        // Mostrar texto de Game Over
+
+        this.jugador.body.setVelocity(0, 0);
+        this.input.keyboard.enabled = false;
+
         const gameOverText = this.add.text(
-            this.cameras.main.centerX, 
-            this.cameras.main.centerY, 
-            'GAME OVER\n\nColeccionables: ' + this.coleccionablesRecolectados,
+            this.cameras.main.centerX,
+            this.cameras.main.centerY,
+            'GAME OVER\n\nRecuerdos recolectados: ' + this.recuerdosRecolectados + '\n\nHaz clic para volver al menú',
             {
-                fontSize: '48px',
+                fontSize: '32px',
                 color: '#e74c3c',
-                align: 'center'
+                align: 'center',
+                stroke: '#000000',
+                strokeThickness: 6
             }
         ).setOrigin(0.5).setScrollFactor(0);
-        
-        this.time.delayedCall(2000, () => {
+
+        gameOverText.setInteractive();
+        gameOverText.on('pointerdown', () => {
             this.scene.start('Menu');
         });
     }
-    
+
     update() {
-        // Movimiento horizontal
+        // Verificar si el juego terminó
+        if (this.vida <= 0) return;
+
+        // MOVIMIENTO HORIZONTAL
         if (this.cursors.left.isDown) {
             this.jugador.body.setVelocityX(-200);
-            // Mover ojos
-            this.ojos.izquierdo.x = this.jugador.x - 10;
-            this.ojos.derecho.x = this.jugador.x + 6;
+            this.jugador.play('caminar', true);
+            this.jugador.flipX = true;
         } else if (this.cursors.right.isDown) {
             this.jugador.body.setVelocityX(200);
-            // Mover ojos
-            this.ojos.izquierdo.x = this.jugador.x - 6;
-            this.ojos.derecho.x = this.jugador.x + 10;
+            this.jugador.play('caminar', true);
+            this.jugador.flipX = false;
         } else {
             this.jugador.body.setVelocityX(0);
-            // Ojos centrados
-            this.ojos.izquierdo.x = this.jugador.x - 8;
-            this.ojos.derecho.x = this.jugador.x + 8;
+            if (this.jugador.body.onFloor()) {
+                this.jugador.play('quieto', true);
+            }
         }
-        
-        // Salto
+
+        // SALTO
         if (this.spaceBar.isDown && this.jugador.body.onFloor()) {
             this.jugador.body.setVelocityY(-400);
-            // Efecto de salto
-            this.tweens.add({
-                targets: this.jugador,
-                scaleY: 0.8,
-                duration: 100,
-                yoyo: true
-            });
+            this.jugador.play('saltar', true);
         }
-        
-        // Habilidad Escuchar (E)
+
+        // HABILIDADES
         if (Phaser.Input.Keyboard.JustDown(this.teclaE)) {
             this.usarHabilidadEscuchar();
         }
-        
-        // Habilidad Recordar (R)
+
         if (Phaser.Input.Keyboard.JustDown(this.teclaR)) {
             this.usarHabilidadRecordar();
         }
-        
-        // Habilidad Perdonar (F)
-        if (Phaser.Input.Keyboard.JustDown(this.teclaF)) {
-            this.usarHabilidadPerdonar();
-        }
-        
-        // Actualizar posición de los ojos
-        this.ojos.izquierdo.y = this.jugador.y - 5;
-        this.ojos.derecho.y = this.jugador.y - 5;
-        this.pupilas.izquierda.x = this.ojos.izquierdo.x;
-        this.pupilas.izquierda.y = this.ojos.izquierdo.y;
-        this.pupilas.derecha.x = this.ojos.derecho.x;
-        this.pupilas.derecha.y = this.ojos.derecho.y;
-        
-        // Seguir al jugador con la cámara (ya está configurado)
-        
-        // Verificar si el jugador cayó al vacío
-        if (this.jugador.y > 800) {
+
+        // Verificar caída al vacío
+        if (this.jugador.y > 750) {
             this.respawn();
         }
-        
-        // Transición a siguiente zona
-        if (this.jugador.x > 2400) {
-            this.transicionarSiguienteZona();
+
+        // Verificar si llegó al final del nivel
+        if (this.jugador.x > 1250) {
+            this.completarNivel();
         }
+
+           this.plataformasGrupo.children.iterate(plat => {
+        if (plat && plat.esFragil && plat.contador) {
+            // Verificar si el jugador ya no está encima
+            const jugadorEnPlataforma = 
+                this.jugador.body.bottom <= plat.body.top + 5 &&
+                this.jugador.body.bottom >= plat.body.top &&
+                Math.abs(this.jugador.x - plat.x) < plat.displayWidth / 2;
+            
+            if (!jugadorEnPlataforma && plat.contador > 0) {
+                this.resetearPlataformaFragil(plat);
+                console.log('🔄 Jugador salió de la plataforma frágil');
+            }
+        }
+        return true;
+    });
     }
-    
+
     usarHabilidadEscuchar() {
         console.log('👂 Habilidad: Escuchar');
-        
-        // Efecto visual de onda sonora
+
         const onda = this.add.circle(this.jugador.x, this.jugador.y, 10, 0x3498db, 0.5);
-        onda.setStrokeStyle(2, 0xffffff);
-        
         this.tweens.add({
             targets: onda,
-            radius: 150,
+            radius: 100,
             alpha: 0,
             duration: 800,
             onComplete: () => onda.destroy()
         });
-        
-        // Mostrar diálogo
-        this.mostrarDialogo('Escuchas... un eco del pasado');
+
+        this.mostrarMensajeHabilidad('Escuchando emociones...');
     }
-    
+
     usarHabilidadRecordar() {
         console.log('💭 Habilidad: Recordar');
-        
-        // Efecto visual de recuerdo
-        for (let i = 0; i < 5; i++) {
+
+        for (let i = 0; i < 3; i++) {
             const memoria = this.add.circle(
-                this.jugador.x + Phaser.Math.Between(-50, 50),
-                this.jugador.y + Phaser.Math.Between(-50, 50),
+                this.jugador.x + Phaser.Math.Between(-30, 30),
+                this.jugador.y + Phaser.Math.Between(-30, 30),
                 5,
                 0xf1c40f
             );
-            
+
             this.tweens.add({
                 targets: memoria,
-                y: memoria.y - 100,
+                y: memoria.y - 50,
                 alpha: 0,
                 duration: 1000,
                 onComplete: () => memoria.destroy()
             });
         }
-        
-        // Mostrar diálogo
-        this.mostrarDialogo('Recuerdas... momentos que creías olvidados');
+
+        this.mostrarMensajeHabilidad('Recordando momentos...');
     }
-    
-    usarHabilidadPerdonar() {
-        console.log('🕊️ Habilidad: Perdonar');
-        
-        // Efecto visual de perdón
-        const halo = this.add.circle(this.jugador.x, this.jugador.y - 30, 20, 0x2ecc71, 0.3);
-        halo.setStrokeStyle(3, 0x27ae60);
-        
-        this.tweens.add({
-            targets: halo,
-            scale: 2,
-            alpha: 0,
-            duration: 1000,
-            onComplete: () => halo.destroy()
-        });
-        
-        // Mostrar diálogo
-        this.mostrarDialogo('Perdonas... liberando el peso del pasado');
-    }
-    
-    mostrarDialogo(texto) {
-        const dialogo = this.add.text(
-            this.jugador.x, 
-            this.jugador.y - 60, 
-            texto, 
+
+    mostrarMensajeHabilidad(texto) {
+        const mensaje = this.add.text(
+            this.jugador.x,
+            this.jugador.y - 60,
+            texto,
             {
                 fontSize: '16px',
                 color: '#ffffff',
@@ -879,42 +664,71 @@ export class Inicio extends Phaser.Scene {
                 padding: { x: 10, y: 5 }
             }
         ).setOrigin(0.5);
-        
+
         this.tweens.add({
-            targets: dialogo,
-            y: dialogo.y - 20,
+            targets: mensaje,
+            y: mensaje.y - 20,
             alpha: 0,
-            duration: 2000,
-            onComplete: () => dialogo.destroy()
+            duration: 1500,
+            onComplete: () => mensaje.destroy()
         });
     }
-    
+
     respawn() {
-        this.jugador.x = this.spawnPoint.x;
-        this.jugador.y = this.spawnPoint.y;
+        this.jugador.x = 200;
+        this.jugador.y = 500;
         this.jugador.body.setVelocity(0, 0);
-        
-        // Efecto de respawn
+
+        this.vida = Math.max(0, this.vida - 20);
+        this.barraVida.width = this.vida;
+        this.barraVida.fillColor = this.vida > 50 ? 0x2ecc71 : this.vida > 25 ? 0xf39c12 : 0xe74c3c;
+
         this.cameras.main.flash(300, 255, 255, 255);
-    }
-    
-    transicionarSiguienteZona() {
-        console.log('🚪 Transicionando a siguiente zona...');
-        
-        // Guardar progreso
-        this.registry.set('coleccionables', this.coleccionablesRecolectados);
-        
-        // Efecto de transición
-        this.cameras.main.fadeOut(1000, 0, 0, 0);
-        
-        // Detener música
-        if (this.musica) {
-            this.musica.stop();
+
+        if (this.vida <= 0) {
+            this.gameOver();
         }
-        
-        this.time.delayedCall(1000, () => {
-            // Aquí cargarías la siguiente zona
-            // Por ahora, volvemos al menú
+    }
+
+    completarNivel() {
+        console.log('✅ Nivel completado!');
+
+        this.input.keyboard.enabled = false;
+
+        const victoriaText = this.add.text(
+            this.cameras.main.centerX,
+            this.cameras.main.centerY,
+            '¡NIVEL COMPLETADO!\n\nRecuerdos: ' + this.recuerdosRecolectados + '\n\nHaz clic para continuar',
+            {
+                fontSize: '36px',
+                color: '#2ecc71',
+                align: 'center',
+                stroke: '#000000',
+                strokeThickness: 6
+            }
+        ).setOrigin(0.5).setScrollFactor(0);
+
+        for (let i = 0; i < 20; i++) {
+            const confeti = this.add.rectangle(
+                Phaser.Math.Between(0, 1280),
+                Phaser.Math.Between(0, 200),
+                10,
+                10,
+                Phaser.Math.Between(0, 0xffffff)
+            );
+
+            this.tweens.add({
+                targets: confeti,
+                y: 720,
+                rotation: Phaser.Math.Between(0, 360),
+                duration: Phaser.Math.Between(1000, 3000),
+                onComplete: () => confeti.destroy()
+            });
+        }
+
+        victoriaText.setInteractive();
+        victoriaText.on('pointerdown', () => {
+            this.registry.set('recuerdos_totales', this.recuerdosRecolectados);
             this.scene.start('Menu');
         });
     }

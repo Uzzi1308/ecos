@@ -1,11 +1,11 @@
+
 export class Preload extends Phaser.Scene {
     constructor() {
         super({ key: 'Preload' });
-        this.assetsCreados = false; // <-- AÑADIDO: bandera para controlar
+        this.assetsCreados = false;
     }
 
     preload() {
-        // Si ya se crearon assets, saltar todo
         if (this.assetsCreados) {
             console.log('⚠️ Assets ya creados, saltando preload...');
             this.transicionAlMenu();
@@ -14,6 +14,55 @@ export class Preload extends Phaser.Scene {
         
         const centerX = this.cameras.main.centerX;
         const centerY = this.cameras.main.centerY;
+
+        console.log('📦 Cargando fondo...');
+        this.load.image('mi_fondo', 'assets/fondo/mi_fondo.png');
+        
+        this.load.on('loaderror', (file) => {
+            console.error('❌ Error cargando:', file.key, file.url);
+        });
+        
+        this.load.on('filecomplete', (key) => {
+            console.log('✅ Archivo cargado:', key);
+        });
+
+            // ✅ AÑADIR AQUÍ - CARGA DE ASSETS REALES
+    console.log('🎨 Intentando cargar assets visuales...');
+    
+    // PERSONAJES
+    this.load.spritesheet('protagonista_real', 'assets/personajes/protagonista.png', {
+        frameWidth: 32,
+        frameHeight: 48
+    });
+    
+    // PLATAFORMAS
+    this.load.image('plataforma_basica_real', 'assets/plataformas/plataforma_basica.png');
+    this.load.image('plataforma_fragil_real', 'assets/plataformas/plataforma_fragil.png');
+    this.load.image('plataforma_movil_real', 'assets/plataformas/plataforma_movil.png');
+    
+    // ENEMIGOS
+    this.load.image('enemigo_miedo_real', 'assets/enemigos/enemigo_miedo.png');
+    this.load.image('enemigo_duda_real', 'assets/enemigos/enemigo_duda.png');
+    this.load.image('enemigo_celos_real', 'assets/enemigos/enemigo_celos.png');
+    
+    // ITEMS
+    this.load.spritesheet('recuerdo_real', 'assets/items/recuerdo.png', {
+        frameWidth: 16,
+        frameHeight: 16
+    });
+    
+    // EFECTOS
+    this.load.image('particula_real', 'assets/efectos/particula.png');
+    
+    // Detectar errores de carga
+    this.load.on('loaderror', (file) => {
+        console.warn('⚠️ No se pudo cargar:', file.key);
+        console.warn('   Usando placeholder para:', file.key);
+    });
+    
+    this.load.on('filecomplete', (key) => {
+        console.log('✅ Asset cargado:', key);
+    });
         
         // Guardar referencias para destruirlas después
         this.progressElements = {};
@@ -51,7 +100,7 @@ export class Preload extends Phaser.Scene {
         this.load.on('progress', progressHandler);
         
         this.load.on('complete', () => {
-            console.log('🔄 Evento complete llamado');
+            console.log('📄 Evento complete llamado');
             
             // Remover el listener de progreso primero
             this.load.off('progress', progressHandler);
@@ -89,7 +138,6 @@ export class Preload extends Phaser.Scene {
             this.load.emit('complete');
         });
     }
-
     // Método para destruir elementos de progreso de forma segura
     destroyProgressElements() {
         if (this.progressElements) {
@@ -211,92 +259,93 @@ export class Preload extends Phaser.Scene {
         console.log(`✅ Textura '${key}' creada con ${numFrames} frames`);
     }
 
-    createPlaceholderAssets() {
-        const graphics = this.make.graphics({x: 0, y: 0, add: false});
-        
-        // PARTÍCULA (con frames)
-        graphics.fillStyle(0xffffff);
-        graphics.fillRect(0, 0, 4, 4);
-        this.crearTexturaConFrames(graphics, 'particula_emocion', 4, 4);
-        this.crearTexturaConFrames(graphics, 'particula_recuerdo', 4, 4);
-        graphics.clear();
-        
-        // PROTAGONISTA (con 2 frames para animación)
+createPlaceholderAssets() {
+    const graphics = this.make.graphics({x: 0, y: 0, add: false});
+    
+    // ✅ PROTAGONISTA - Solo crear si no existe la versión real
+    if (!this.textures.exists('protagonista_real')) {
+        console.log('📦 Creando protagonista placeholder');
         graphics.fillStyle(0x3498db);
-        // Frame 0
         graphics.fillRect(0, 0, 32, 32);
         graphics.fillStyle(0x2980b9);
         graphics.fillRect(8, 32, 16, 16);
-        
-        // Frame 1 (ligeramente diferente para animación)
-        graphics.fillStyle(0x3498db);
         graphics.fillRect(32, 0, 32, 32);
         graphics.fillStyle(0x2980b9);
         graphics.fillRect(40, 32, 16, 16);
-        graphics.fillStyle(0x1a5276);
-        graphics.fillRect(36, 36, 8, 8);
-        
         this.crearTexturaConFrames(graphics, 'protagonista', 32, 48, 2);
         graphics.clear();
-        
-        // RECUERDO (con frames para animación de flotar)
+    } else {
+        console.log('✅ Usando protagonista real');
+        // Crear alias para usar el nombre esperado
+        this.textures.addSpriteSheetFromAtlas('protagonista', { 
+            atlas: 'protagonista_real', 
+            frame: '__BASE'
+        });
+    }
+    
+    // ✅ RECUERDO
+    if (!this.textures.exists('recuerdo_real')) {
+        console.log('📦 Creando recuerdo placeholder');
         graphics.fillStyle(0xffff00);
-        // Frame 0
         graphics.fillCircle(8, 8, 8);
-        // Frame 1 (más alto)
         graphics.fillCircle(24, 6, 8);
-        // Frame 2 (más bajo)
         graphics.fillCircle(40, 10, 8);
-        
         this.crearTexturaConFrames(graphics, 'recuerdo', 16, 16, 3);
         graphics.clear();
-        
-        // ENEMIGOS
-        ['miedo', 'duda', 'celos', 'silencio'].forEach((tipo, i) => {
-            const colors = [0x4444ff, 0x888888, 0xff4444, 0x000000];
-            
+    } else {
+        console.log('✅ Usando recuerdo real');
+    }
+    
+    // ✅ ENEMIGOS
+    ['miedo', 'duda', 'celos'].forEach((tipo, i) => {
+        const keyReal = `enemigo_${tipo}_real`;
+        if (!this.textures.exists(keyReal)) {
+            console.log(`📦 Creando enemigo_${tipo} placeholder`);
+            const colors = [0x4444ff, 0x888888, 0xff4444];
             graphics.fillStyle(colors[i]);
-            if (i === 0) {
-                graphics.fillCircle(16, 16, 12);
-            } else if (i === 1) {
-                graphics.fillRect(8, 8, 16, 16);
-            } else if (i === 2) {
+            if (i === 0) graphics.fillCircle(16, 16, 12);
+            else if (i === 1) graphics.fillRect(8, 8, 16, 16);
+            else {
                 graphics.beginPath();
                 graphics.moveTo(16, 4);
                 graphics.lineTo(28, 28);
                 graphics.lineTo(4, 28);
                 graphics.closePath();
                 graphics.fillPath();
-            } else {
-                graphics.fillCircle(16, 16, 16);
             }
-            
             this.crearTexturaConFrames(graphics, `enemigo_${tipo}`, 32, 32);
             graphics.clear();
-        });
-        
-        // PLATAFORMAS
-        graphics.fillStyle(0x8b4513);
-        graphics.fillRect(0, 0, 64, 16);
-        this.crearTexturaConFrames(graphics, 'plataforma_basica', 64, 16);
-        graphics.clear();
-        
-        graphics.fillStyle(0xa0522d);
-        graphics.fillRect(0, 0, 64, 16);
-        graphics.strokeRect(0, 0, 64, 16);
-        this.crearTexturaConFrames(graphics, 'plataforma_fragil', 64, 16);
-        graphics.clear();
-        
-        graphics.fillStyle(0xcd853f);
-        graphics.fillRect(0, 0, 64, 16);
-        graphics.fillStyle(0x000000, 0.3);
-        graphics.fillCircle(16, 8, 4);
-        graphics.fillCircle(48, 8, 4);
-        this.crearTexturaConFrames(graphics, 'plataforma_movil', 64, 16);
-        
-        graphics.destroy();
-        console.log('👤 Assets de personajes y objetos creados');
-    }
+        } else {
+            console.log(`✅ Usando enemigo_${tipo} real`);
+        }
+    });
+    
+    // ✅ PLATAFORMAS
+    const plataformas = ['basica', 'fragil', 'movil'];
+    const colores = [0x8b4513, 0xa0522d, 0xcd853f];
+    
+    plataformas.forEach((tipo, i) => {
+        const keyReal = `plataforma_${tipo}_real`;
+        if (!this.textures.exists(keyReal)) {
+            console.log(`📦 Creando plataforma_${tipo} placeholder`);
+            graphics.fillStyle(colores[i]);
+            graphics.fillRect(0, 0, 64, 16);
+            if (tipo === 'fragil') graphics.strokeRect(0, 0, 64, 16);
+            if (tipo === 'movil') {
+                graphics.fillStyle(0x000000, 0.3);
+                graphics.fillCircle(16, 8, 4);
+                graphics.fillCircle(48, 8, 4);
+            }
+            this.crearTexturaConFrames(graphics, `plataforma_${tipo}`, 64, 16);
+            graphics.clear();
+        } else {
+            console.log(`✅ Usando plataforma_${tipo} real`);
+        }
+    });
+    
+    graphics.destroy();
+    console.log('👤 Assets verificados/creados');
+}
 
     createAnimaciones() {
         console.log('🎬 Creando animaciones básicas...');
@@ -379,6 +428,8 @@ export class Preload extends Phaser.Scene {
             });
         });
     }
+
+
 
     // ELIMINAR el método create() - todo se maneja en transicionAlMenu()
 }

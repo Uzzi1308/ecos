@@ -4,7 +4,7 @@ export default class EnemigoEmocional extends Phaser.Physics.Arcade.Sprite {
         
         this.tipo = tipo; // 'miedo', 'duda', 'celos', 'silencio'
         this.estado = 'activo';
-        this.intensidad = 100;
+        this.intensidad = 100; 
         this.resuelto = false;
         this.detectandoJugador = false;
         this.radioDeteccion = 200;
@@ -254,35 +254,33 @@ export default class EnemigoEmocional extends Phaser.Physics.Arcade.Sprite {
         });
     }
     
-    crearEfectoTransformacion(color) {
-        // Crear partículas de transformación
-        if (!this.particulas) {
-            this.particulas = this.scene.add.particles('particula_emocion');
-        }
+crearEfectoTransformacion(color) {
+    // SOLUCIÓN: Usa efectos con gráficos en lugar de partículas
+    for (let i = 0; i < 20; i++) {
+        const particula = this.scene.add.circle(
+            this.x,
+            this.y,
+            Phaser.Math.Between(2, 6),
+            color,
+            0.8
+        );
         
-        const emitter = this.particulas.createEmitter({
-            x: this.x,
-            y: this.y,
-            speed: { min: 20, max: 100 },
-            angle: { min: 0, max: 360 },
-            scale: { start: 0.5, end: 0 },
-            alpha: { start: 1, end: 0 },
-            tint: color,
-            blendMode: 'ADD',
-            lifespan: 1000,
-            quantity: 50
-        });
+        // Calcular dirección radial
+        const angle = (i / 20) * Math.PI * 2;
+        const distancia = Phaser.Math.Between(50, 120);
         
-        // Detener emisor después de 500ms
-        this.scene.time.delayedCall(500, () => {
-            emitter.stop();
-        });
-        
-        // Destruir después de que terminen las partículas
-        this.scene.time.delayedCall(1500, () => {
-            emitter.destroy();
+        this.scene.tweens.add({
+            targets: particula,
+            x: this.x + Math.cos(angle) * distancia,
+            y: this.y + Math.sin(angle) * distancia,
+            scale: 0,
+            alpha: 0,
+            duration: Phaser.Math.Between(600, 1000),
+            ease: 'Power2',
+            onComplete: () => particula.destroy()
         });
     }
+}
     
     update() {
         if (!this.resuelto) {

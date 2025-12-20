@@ -1,7 +1,7 @@
 import { Boot } from './scenes/Boot.js';
 import { Preload } from './scenes/Preload.js';
 import { Menu } from './scenes/Menu.js';
-import { Inicio } from './scenes/Inicio.js'; 
+import { Inicio } from './scenes/Inicio.js';
 
 const config = {
     type: Phaser.AUTO,
@@ -9,7 +9,7 @@ const config = {
     height: 720,
     parent: 'game',
     backgroundColor: '#000000',
-    scene: [Boot, Preload, Menu, Inicio], 
+    scene: [Boot, Preload, Menu, Inicio], // <-- Inicio agregado
     physics: {
         default: 'arcade',
         arcade: {
@@ -23,9 +23,6 @@ const config = {
     }
 };
 
-// Inicia el juego
 const game = new Phaser.Game(config);
-
-// Para debug
 console.log('Phaser version:', Phaser.VERSION);
 console.log('Game iniciado');
