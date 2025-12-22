@@ -1,44 +1,47 @@
+// EnemigoEmocional.js
 export default class EnemigoEmocional extends Phaser.Physics.Arcade.Sprite {
-    constructor(scene, x, y, tipo) {
-        super(scene, x, y, `enemigo_${tipo}`);
-        
-        this.tipo = tipo; // 'miedo', 'duda', 'celos', 'silencio'
-        this.estado = 'activo';
-        this.intensidad = 100; 
-        this.resuelto = false;
-        this.detectandoJugador = false;
-        this.radioDeteccion = 200;
-        
-        // Propiedades según tipo
-        this.configurarPorTipo();
-        
-        // Configuración física
+constructor(scene, x, y, tipo) {
+    // Usa el spritesheet específico para cada tipo de enemigo
+    super(scene, x, y, `enemigo_${tipo}`);
+    
+    this.tipo = tipo; // 'miedo', 'duda', 'celos', 'silencio'
+    this.estado = 'activo';
+    this.resuelto = false;
+    this.detectandoJugador = false;
+    this.radioDeteccion = 200;
+    this.ultimaInteraccion = 0;
+    
+    // Propiedades según tipo
+    this.configurarPorTipo();
+    
+    // 🔴 IMPORTANTE: AÑADIR A LA ESCENA Y FÍSICA PRIMERO
+    scene.add.existing(this);
+    scene.physics.add.existing(this);
+    
+    // 🔴 AHORA SÍ configurar física (el cuerpo ya existe)
+    if (this.body) {
         this.setCollideWorldBounds(true);
         this.body.setSize(24, 24);
-        this.body.setOffset(4, 8);
+        this.body.setOffset(4, 4);
         this.body.setBounce(0.2);
-        
-        // Interacción
-        this.setInteractive();
-        this.on('pointerdown', () => this.interactuar());
-        
-        // Tween de latido emocional
-        this.crearAnimacionLatido();
-        
-        // Sonidos
-        this.sonidoInteraccion = scene.sound.add('sfx_texto');
-        
-        scene.add.existing(this);
-        scene.physics.add.existing(this);
-        
-        // Grupo para partículas
-        this.particulas = null;
+    } else {
+        console.error('❌ Error: Cuerpo físico no disponible para', this.tipo);
     }
+    
+    // Iniciar animación
+    this.iniciarAnimacion();
+    
+    // Interacción
+    this.setInteractive();
+    this.on('pointerdown', () => this.interactuar());
+    
+    // Sonidos
+    this.sonidoInteraccion = scene.sound.add('sfx_texto');
+}
     
     configurarPorTipo() {
         const configs = {
             miedo: {
-                color: 0x4444ff,
                 velocidad: 80,
                 comportamiento: 'huir',
                 dialogo: [
@@ -49,7 +52,6 @@ export default class EnemigoEmocional extends Phaser.Physics.Arcade.Sprite {
                 saludMaxima: 3
             },
             duda: {
-                color: 0x888888,
                 velocidad: 40,
                 comportamiento: 'circular',
                 dialogo: [
@@ -60,7 +62,6 @@ export default class EnemigoEmocional extends Phaser.Physics.Arcade.Sprite {
                 saludMaxima: 5
             },
             celos: {
-                color: 0xff4444,
                 velocidad: 120,
                 comportamiento: 'perseguir',
                 dialogo: [
@@ -71,7 +72,6 @@ export default class EnemigoEmocional extends Phaser.Physics.Arcade.Sprite {
                 saludMaxima: 4
             },
             silencio: {
-                color: 0x000000,
                 velocidad: 0,
                 comportamiento: 'estatico',
                 dialogo: ["..."],
@@ -81,29 +81,38 @@ export default class EnemigoEmocional extends Phaser.Physics.Arcade.Sprite {
         
         this.config = configs[this.tipo];
         this.salud = this.config.saludMaxima;
-        this.setTint(this.config.color);
         
         // Radio de detección según tipo
         if (this.tipo === 'miedo') this.radioDeteccion = 150;
         if (this.tipo === 'celos') this.radioDeteccion = 250;
     }
     
-    crearAnimacionLatido() {
-        // Animación de pulso/latido
-        this.scene.tweens.add({
-            targets: this,
-            scaleX: 1.1,
-            scaleY: 1.1,
-            duration: 1000,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut'
-        });
+    iniciarAnimacion() {
+        // Intentar usar animación si existe
+        const animKey = `enemigo_${this.tipo}_latido`;
         
-        // Cambio sutil de brillo
+        if (this.scene.anims.exists(animKey)) {
+            this.play(animKey);
+        } else {
+            // Animación manual simple: alternar entre frame 0 y 1
+            this.setFrame(0);
+            
+            this.scene.time.addEvent({
+                delay: 333, // 3 FPS
+                callback: () => {
+                    if (this.active && !this.resuelto) {
+                        const currentFrame = this.frame ? this.frame.name : 0;
+                        this.setFrame(currentFrame === 0 ? 1 : 0);
+                    }
+                },
+                loop: true
+            });
+        }
+        
+        // Efecto de brillo sutil
         this.scene.tweens.add({
             targets: this,
-            alpha: { from: 0.8, to: 1 },
+            alpha: { from: 0.9, to: 1 },
             duration: 1500,
             yoyo: true,
             repeat: -1,
@@ -114,9 +123,14 @@ export default class EnemigoEmocional extends Phaser.Physics.Arcade.Sprite {
     interactuar() {
         if (this.resuelto) return;
         
+        // Evitar interacciones muy seguidas
+        const now = this.scene.time.now;
+        if (now - this.ultimaInteraccion < 300) return;
+        this.ultimaInteraccion = now;
+        
         console.log(`Interactuando con ${this.tipo}`);
         
-        // Reducir salud/intensidad
+        // Reducir salud
         this.salud--;
         
         // Mostrar diálogo aleatorio
@@ -131,6 +145,12 @@ export default class EnemigoEmocional extends Phaser.Physics.Arcade.Sprite {
             yoyo: true
         });
         
+        // Reproducir animación de daño si existe
+        const danoAnim = `enemigo_${this.tipo}_dano`;
+        if (this.scene.anims.exists(danoAnim)) {
+            this.play(danoAnim);
+        }
+        
         // Verificar si se calma
         if (this.salud <= 0) {
             this.calmar();
@@ -141,11 +161,16 @@ export default class EnemigoEmocional extends Phaser.Physics.Arcade.Sprite {
     }
     
     mostrarDialogo(texto) {
-        this.sonidoInteraccion.play({ volume: 0.3 });
+        // Intentar reproducir sonido
+        try {
+            this.sonidoInteraccion.play({ volume: 0.3 });
+        } catch (e) {
+            // Silencio si no hay sonido
+        }
         
         // Crear burbuja de diálogo
         const dialogo = this.scene.add.text(this.x, this.y - 50, texto, {
-            fontFamily: 'Courier New',
+            fontFamily: 'Arial, sans-serif',
             fontSize: '14px',
             color: '#ffffff',
             backgroundColor: 'rgba(0, 0, 0, 0.7)',
@@ -167,9 +192,13 @@ export default class EnemigoEmocional extends Phaser.Physics.Arcade.Sprite {
     mostrarIndicadorSalud() {
         // Crear indicador de salud
         const barra = this.scene.add.rectangle(this.x, this.y - 30, 30, 4, 0xff0000);
-        const relleno = this.scene.add.rectangle(this.x - 15, this.y - 30, 
-            (this.salud / this.config.saludMaxima) * 30, 4, 0x00ff00)
-            .setOrigin(0, 0.5);
+        const relleno = this.scene.add.rectangle(
+            this.x - 15, 
+            this.y - 30, 
+            (this.salud / this.config.saludMaxima) * 30, 
+            4, 
+            0x00ff00
+        ).setOrigin(0, 0.5);
         
         // Animación de desvanecimiento
         this.scene.tweens.add({
@@ -192,14 +221,22 @@ export default class EnemigoEmocional extends Phaser.Physics.Arcade.Sprite {
         this.resuelto = true;
         this.estado = 'calmado';
         
-        // Cambiar apariencia
-        this.clearTint();
+        // Detener animación
+        if (this.anims) {
+            this.anims.stop();
+        }
+        
+        // Cambiar a frame estático
+        this.setFrame(0);
         this.setAlpha(0.6);
         this.setScale(0.8);
         this.setVelocity(0, 0);
         
-        // Detener animaciones de latido
+        // Detener tweens
         this.scene.tweens.killTweensOf(this);
+        
+        // Efecto de calma
+        this.crearEfectoCalma();
         
         // Emitir evento
         this.scene.events.emit('enemigoCalmado', {
@@ -208,10 +245,37 @@ export default class EnemigoEmocional extends Phaser.Physics.Arcade.Sprite {
             y: this.y
         });
         
-        // Transformar en algo útil después de un delay
-        this.scene.time.delayedCall(500, () => {
+        // Transformar después de un delay
+        this.scene.time.delayedCall(800, () => {
             this.transformarEnUtilidad();
         });
+    }
+    
+    crearEfectoCalma() {
+        // Efecto visual cuando se calma
+        for (let i = 0; i < 10; i++) {
+            const particula = this.scene.add.circle(
+                this.x,
+                this.y,
+                Phaser.Math.Between(2, 4),
+                0xffffff,
+                0.8
+            );
+            
+            const angle = (i / 10) * Math.PI * 2;
+            const distancia = Phaser.Math.Between(30, 60);
+            
+            this.scene.tweens.add({
+                targets: particula,
+                x: this.x + Math.cos(angle) * distancia,
+                y: this.y + Math.sin(angle) * distancia,
+                alpha: 0,
+                scale: 0,
+                duration: 800,
+                ease: 'Power2',
+                onComplete: () => particula.destroy()
+            });
+        }
     }
     
     transformarEnUtilidad() {
@@ -246,41 +310,42 @@ export default class EnemigoEmocional extends Phaser.Physics.Arcade.Sprite {
         // Llamar a la función de transformación en la escena si existe
         if (this.scene[transformacion.efecto]) {
             this.scene[transformacion.efecto](this.x, this.y);
+        } else {
+            console.warn(`Método ${transformacion.efecto} no existe en la escena`);
         }
         
-        // Destruir el enemigo después de la transformación
+        // Destruir después de la transformación
         this.scene.time.delayedCall(1000, () => {
             this.destroy();
         });
     }
     
-crearEfectoTransformacion(color) {
-    // SOLUCIÓN: Usa efectos con gráficos en lugar de partículas
-    for (let i = 0; i < 20; i++) {
-        const particula = this.scene.add.circle(
-            this.x,
-            this.y,
-            Phaser.Math.Between(2, 6),
-            color,
-            0.8
-        );
-        
-        // Calcular dirección radial
-        const angle = (i / 20) * Math.PI * 2;
-        const distancia = Phaser.Math.Between(50, 120);
-        
-        this.scene.tweens.add({
-            targets: particula,
-            x: this.x + Math.cos(angle) * distancia,
-            y: this.y + Math.sin(angle) * distancia,
-            scale: 0,
-            alpha: 0,
-            duration: Phaser.Math.Between(600, 1000),
-            ease: 'Power2',
-            onComplete: () => particula.destroy()
-        });
+    crearEfectoTransformacion(color) {
+        // Efecto de partículas simple
+        for (let i = 0; i < 15; i++) {
+            const particula = this.scene.add.circle(
+                this.x,
+                this.y,
+                Phaser.Math.Between(2, 6),
+                color,
+                0.8
+            );
+            
+            const angle = (i / 15) * Math.PI * 2;
+            const distancia = Phaser.Math.Between(50, 100);
+            
+            this.scene.tweens.add({
+                targets: particula,
+                x: this.x + Math.cos(angle) * distancia,
+                y: this.y + Math.sin(angle) * distancia,
+                scale: 0,
+                alpha: 0,
+                duration: Phaser.Math.Between(600, 1000),
+                ease: 'Power2',
+                onComplete: () => particula.destroy()
+            });
+        }
     }
-}
     
     update() {
         if (!this.resuelto) {
@@ -299,7 +364,7 @@ crearEfectoTransformacion(color) {
         
         this.detectandoJugador = distancia < this.radioDeteccion;
         
-        // Cambiar color si detecta al jugador
+        // Cambiar alpha si detecta al jugador
         if (this.detectandoJugador) {
             this.setAlpha(1);
         } else {
@@ -379,8 +444,6 @@ crearEfectoTransformacion(color) {
         }
     }
     
-    // ========== GETTERS ==========
-    
     getDatos() {
         return {
             tipo: this.tipo,
@@ -389,5 +452,13 @@ crearEfectoTransformacion(color) {
             resuelto: this.resuelto,
             salud: this.salud
         };
+    }
+    
+    destroy() {
+        // Limpiar cualquier tween asociado
+        this.scene.tweens.killTweensOf(this);
+        
+        // Llamar al destroy original
+        super.destroy();
     }
 }

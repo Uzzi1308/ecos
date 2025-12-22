@@ -31,8 +31,43 @@ export class Preload extends Phaser.Scene {
     
     // PERSONAJES
     this.load.spritesheet('protagonista_real', 'assets/personajes/protagonista.png', {
+        frameWidth: 32,   // Ancho de cada frame
+        frameHeight: 48,  // Alto de cada frame
+        endFrame: 1       // Solo 2 frames (0 y 1)
+    });
+
+     console.log('🎨 Intentando cargar assets reales...');
+    
+    // ENEMIGOS - Spritesheets reales con 2 frames
+    this.load.spritesheet('enemigo_miedo', 'assets/enemigos/miedo.png', {
         frameWidth: 32,
-        frameHeight: 48
+        frameHeight: 32
+    });
+    
+    this.load.spritesheet('enemigo_duda', 'assets/enemigos/duda.png', {
+        frameWidth: 32,
+        frameHeight: 32
+    });
+    
+    this.load.spritesheet('enemigo_celos', 'assets/enemigos/celos.png', {
+        frameWidth: 32,
+        frameHeight: 32
+    });
+    
+    this.load.spritesheet('enemigo_silencio', 'assets/enemigos/silencio.png', {
+        frameWidth: 32,
+        frameHeight: 32
+    });
+    
+    // Detectar errores de carga
+    this.load.on('loaderror', (file) => {
+        console.warn('⚠️ No se pudo cargar:', file.key);
+        console.warn('   Usando placeholder para:', file.key);
+    });
+    
+    this.load.on('filecomplete', (key, type, texture) => {
+        console.log(`✅ ${key} cargado`, 
+                   `(${texture?.width}x${texture?.height})`);
     });
     
     // PLATAFORMAS
@@ -262,8 +297,12 @@ export class Preload extends Phaser.Scene {
 createPlaceholderAssets() {
     const graphics = this.make.graphics({x: 0, y: 0, add: false});
     
-    // ✅ PROTAGONISTA - Solo crear si no existe la versión real
-    if (!this.textures.exists('protagonista_real')) {
+    // ✅ PROTAGONISTA - Corregido
+    if (this.textures.exists('protagonista_real')) {
+        console.log('✅ Usando protagonista real');
+        // NO crear alias, usar directamente la textura real
+        // Las animaciones usarán 'protagonista_real' en lugar de 'protagonista'
+    } else {
         console.log('📦 Creando protagonista placeholder');
         graphics.fillStyle(0x3498db);
         graphics.fillRect(0, 0, 32, 32);
@@ -274,14 +313,8 @@ createPlaceholderAssets() {
         graphics.fillRect(40, 32, 16, 16);
         this.crearTexturaConFrames(graphics, 'protagonista', 32, 48, 2);
         graphics.clear();
-    } else {
-        console.log('✅ Usando protagonista real');
-        // Crear alias para usar el nombre esperado
-        this.textures.addSpriteSheetFromAtlas('protagonista', { 
-            atlas: 'protagonista_real', 
-            frame: '__BASE'
-        });
     }
+    
     
     // ✅ RECUERDO
     if (!this.textures.exists('recuerdo_real')) {
@@ -319,6 +352,70 @@ createPlaceholderAssets() {
             console.log(`✅ Usando enemigo_${tipo} real`);
         }
     });
+
+        // ✅ ENEMIGOS - Solo crear placeholders si no existen las versiones reales
+    ['miedo', 'duda', 'celos', 'silencio'].forEach((tipo) => {
+        const key = `enemigo_${tipo}`;
+        
+        if (!this.textures.exists(key)) {
+            console.log(`📦 Creando placeholder para ${key}`);
+            
+            const colors = {
+                miedo: { base: 0x4444ff, claro: 0x8888ff },
+                duda: { base: 0x888888, claro: 0xcccccc },
+                celos: { base: 0xff4444, claro: 0xff8888 },
+                silencio: { base: 0x000000, claro: 0x333333 }
+            };
+            
+            const color = colors[tipo];
+            
+            // Frame 0 (izquierda)
+            graphics.fillStyle(color.base);
+            this.dibujarEnemigoFrame(graphics, 0, 0, tipo, 0);
+            
+            // Frame 1 (derecha)
+            graphics.fillStyle(color.claro);
+            this.dibujarEnemigoFrame(graphics, 32, 0, tipo, 1);
+            
+            this.crearTexturaConFrames(graphics, key, 32, 32, 2);
+            graphics.clear();
+        } else {
+            console.log(`✅ Usando ${key} real`);
+            // Verificar dimensiones
+            const tex = this.textures.get(key);
+            console.log(`   Dimensiones: ${tex.source[0].width}x${tex.source[0].height}`);
+        }
+    });
+    
+    graphics.destroy();
+    console.log('👤 Assets verificados/creados');
+}
+
+// Añade este método auxiliar a la clase Preload
+dibujarEnemigoFrame(graphics, xOffset, yOffset, tipo, frameNum) {
+    const x = xOffset + 16;
+    const y = yOffset + 16;
+    
+    // Dibuja formas básicas para cada tipo (placeholder)
+    switch(tipo) {
+        case 'miedo':
+            graphics.fillCircle(x, y, frameNum === 0 ? 12 : 10);
+            break;
+        case 'duda':
+            graphics.fillRect(x - 8, y - 8, 16, 16);
+            break;
+        case 'celos':
+            graphics.beginPath();
+            graphics.moveTo(x, y - 10);
+            graphics.lineTo(x + 10, y + 8);
+            graphics.lineTo(x - 10, y + 8);
+            graphics.closePath();
+            graphics.fillPath();
+            break;
+        case 'silencio':
+            graphics.fillCircle(x, y, frameNum === 0 ? 12 : 14);
+            break;
+    }
     
     // ✅ PLATAFORMAS
     const plataformas = ['basica', 'fragil', 'movil'];
@@ -347,55 +444,63 @@ createPlaceholderAssets() {
     console.log('👤 Assets verificados/creados');
 }
 
-    createAnimaciones() {
-        console.log('🎬 Creando animaciones básicas...');
+   createAnimaciones() {
+    console.log('🎬 Creando animaciones básicas...');
+    
+    try {
+        // ANIMACIONES DEL PROTAGONISTA
+        const texProtagonista = this.textures.exists('protagonista_real') ? 'protagonista_real' : 'protagonista';
         
-        try {
-            // Verificar que las texturas existen
-            if (!this.textures.exists('protagonista')) {
-                console.error('❌ Textura "protagonista" no existe');
-                return;
-            }
-            
-            if (!this.textures.exists('recuerdo')) {
-                console.error('❌ Textura "recuerdo" no existe');
-                return;
-            }
-            
-            // ANIMACIONES DEL PROTAGONISTA
+        if (this.textures.exists(texProtagonista)) {
             this.anims.create({
                 key: 'caminar',
-                frames: [
-                    { key: 'protagonista', frame: 0 },
-                    { key: 'protagonista', frame: 1 }
-                ],
+                frames: this.anims.generateFrameNumbers(texProtagonista, { start: 0, end: 1 }),
                 frameRate: 5,
                 repeat: -1
             });
             
             this.anims.create({
                 key: 'quieto',
-                frames: [{ key: 'protagonista', frame: 0 }],
+                frames: [{ key: texProtagonista, frame: 0 }],
                 frameRate: 1
             });
             
             this.anims.create({
                 key: 'saltar',
-                frames: [{ key: 'protagonista', frame: 1 }],
+                frames: [{ key: texProtagonista, frame: 1 }],
                 frameRate: 1
             });
+        }
+        
+        // ANIMACIONES DE ENEMIGOS - Verificar cuántos frames tiene cada uno
+        ['miedo', 'duda', 'celos', 'silencio'].forEach(tipo => {
+            const key = `enemigo_${tipo}`;
             
-            this.anims.create({
-                key: 'escuchar',
-                frames: [
-                    { key: 'protagonista', frame: 0 },
-                    { key: 'protagonista', frame: 1 }
-                ],
-                frameRate: 3,
-                repeat: 0
-            });
-            
-            // ANIMACIÓN DEL RECUERDO
+            if (this.textures.exists(key)) {
+                const frameTotal = this.textures.get(key).frameTotal;
+                console.log(`📊 ${key}: ${frameTotal} frames`);
+                
+                // Solo crear animación si tiene al menos 2 frames
+                if (frameTotal >= 2) {
+                    this.anims.create({
+                        key: `enemigo_${tipo}_latido`,
+                        frames: [
+                            { key: key, frame: 0 },
+                            { key: key, frame: 1 }
+                        ],
+                        frameRate: 3,
+                        repeat: -1,
+                        yoyo: true
+                    });
+                    console.log(`🎬 Animación creada: enemigo_${tipo}_latido`);
+                } else {
+                    console.warn(`⚠️ ${key} tiene solo ${frameTotal} frame(s), no se crea animación`);
+                }
+            }
+        });
+        
+        // ANIMACIÓN DEL RECUERDO
+        if (this.textures.exists('recuerdo')) {
             this.anims.create({
                 key: 'recuerdo_flotar',
                 frames: [
@@ -407,12 +512,13 @@ createPlaceholderAssets() {
                 repeat: -1,
                 yoyo: true
             });
-            
-            console.log('🎬 Animaciones básicas creadas correctamente');
-        } catch (error) {
-            console.error('❌ Error creando animaciones:', error);
         }
+        
+        console.log('🎬 Animaciones creadas correctamente');
+    } catch (error) {
+        console.error('❌ Error creando animaciones:', error);
     }
+}
     
     // NUEVO MÉTODO: Transición al menú
     transicionAlMenu() {
