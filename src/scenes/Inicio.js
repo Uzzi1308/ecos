@@ -89,107 +89,529 @@ export class Inicio extends Phaser.Scene {
         }
     }
 
-    crearMundoBasico() {
-        const getKey = (base) => {
-            const real = `${base}_real`;
-            return this.textures.exists(real) ? real : base;
-        };
+// MEJORAS PARA INICIO.JS - Sección crearMundoBasico()
+// Reemplaza solo la parte de enemigos y sus colisiones
 
-        // Suelo principal
-        this.suelo = this.physics.add.staticSprite(640, 700, getKey('plataforma_basica'));
-        this.suelo.displayWidth = 1280;
-        this.suelo.displayHeight = 40;
-        this.suelo.refreshBody();
-        this.suelo.body.setSize(1280, 40);
+crearMundoBasico() {
+    const getKey = (base) => {
+        const real = `${base}_real`;
+        return this.textures.exists(real) ? real : base;
+    };
 
-        // Plataformas flotantes
-        const plataformas = [
-            { x: 300, y: 550, type: getKey('plataforma_basica'), width: 200, fragil: false },
-            { x: 600, y: 450, type: getKey('plataforma_movil'), width: 180, fragil: false },
-            { x: 900, y: 350, type: getKey('plataforma_fragil'), width: 160, fragil: true },
-            { x: 1100, y: 500, type: getKey('plataforma_basica'), width: 150, fragil: false }
-        ];
+      // ========== SUELO PRINCIPAL CON TILESPRITE (SE REPITE) ==========
+    console.log('🏗️ Creando suelo con tilesprite...');
+    
+    // Verificar si existe la textura real
+    const sueloTextureKey = this.textures.exists('suelo_principal') 
+        ? 'suelo_principal' 
+        : 'plataforma_basica';
+    
+    console.log(`   Textura del suelo: ${sueloTextureKey}`);
+    
+    // 1. CREAR TILESPRITE VISUAL (se repetirá automáticamente)
+    // Esto crea un sprite que repite la textura 400x40 a lo ancho de 1400px
+    this.sueloVisual = this.add.tileSprite(640, 700, 1400, 40, sueloTextureKey);
+    this.sueloVisual.setOrigin(0.5, 0.5); // Centrar
+    this.sueloVisual.setDepth(-50);
+    
+    console.log(`   Tilesprite creado: 1400x40 (3.5 repeticiones de ${sueloTextureKey})`);
 
-        this.plataformasGrupo = this.physics.add.group({
-            immovable: true,
-            allowGravity: false
+    // 2. CREAR SPRITE FÍSICO INVISIBLE (para colisiones)
+    this.suelo = this.physics.add.staticSprite(640, 700, sueloTextureKey);
+    
+    // Hacerlo invisible (solo para física)
+    this.suelo.setVisible(false);
+    
+    // Configurar cuerpo físico del tamaño completo
+    this.suelo.setDisplaySize(1400, 40);
+    this.suelo.body.width = 1400;
+    this.suelo.body.height = 40;
+    this.suelo.body.setOffset(-700, -20);
+    this.suelo.refreshBody();
+    
+    console.log(`✅ Suelo físico creado (invisible) para colisiones`);
+
+    // ========== PLATAFORMAS FLOTANTES (CORREGIDO) ==========
+    console.log('🏗️ Creando plataformas...');
+    
+    const plataformas = [
+        { x: 250, y: 550, type: getKey('plataforma_basica'), width: 220, fragil: false },
+        { x: 550, y: 450, type: getKey('plataforma_movil'), width: 200, fragil: false },
+        { x: 850, y: 350, type: getKey('plataforma_fragil'), width: 180, fragil: true },
+        { x: 1100, y: 500, type: getKey('plataforma_basica'), width: 180, fragil: false }
+    ];
+
+    this.plataformasGrupo = this.physics.add.group({
+        immovable: true,
+        allowGravity: false
+    });
+
+    plataformas.forEach((p, index) => {
+        console.log(`📦 Creando plataforma ${index + 1}: ${p.type}`);
+        
+        // Crear sprite con física
+        const plat = this.physics.add.sprite(p.x, p.y, p.type);
+        
+        // 1. Escalar visualmente
+        plat.setDisplaySize(p.width, 20);
+        
+        // 2. Configurar propiedades
+        plat.esFragil = p.fragil || false;
+        plat.contador = null;
+        plat.textoContador = null;
+        plat.timerDestruccion = null;
+        
+        // 3. IMPORTANTE: Actualizar tamaño del cuerpo físico
+        plat.body.setSize(p.width, 20);
+        
+        // 4. Asegurar que es inamovible y sin gravedad
+        plat.body.setImmovable(true);
+        plat.body.setAllowGravity(false);
+        
+        // 5. Añadir al grupo
+        this.plataformasGrupo.add(plat);
+        
+        console.log(`   ✅ Visual: ${p.width}x20, Cuerpo: ${plat.body.width}x${plat.body.height}`);
+
+        // Animación para plataforma móvil
+        if (p.type.includes('movil')) {
+            console.log(`   🔄 Animando plataforma móvil`);
+            this.tweens.add({
+                targets: plat,
+                y: p.y - 60,
+                duration: 2500,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut',
+                onUpdate: () => {
+                    // Forzar actualización del cuerpo en cada frame
+                    plat.body.updateFromGameObject();
+                }
+            });
+        }
+
+        // Animación para plataforma frágil
+        if (p.fragil) {
+            console.log(`   ⚠️ Plataforma frágil creada`);
+            this.tweens.add({
+                targets: plat,
+                alpha: { from: 1, to: 0.7 },
+                duration: 800,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
+            });
+        }
+    });
+
+    console.log(`✅ ${plataformas.length} plataformas creadas`);
+
+    // ========== RECUERDOS ==========
+    console.log('💛 Creando recuerdos...');
+    
+    this.recuerdosGrupo = this.physics.add.staticGroup();
+    const posicionesRecuerdos = [
+        { x: 250, y: 500 },
+        { x: 550, y: 400 },
+        { x: 850, y: 300 },
+        { x: 1100, y: 450 }
+    ];
+
+    posicionesRecuerdos.forEach((pos, index) => {
+        const recuerdo = this.add.sprite(pos.x, pos.y, getKey('recuerdo'));
+        this.physics.add.existing(recuerdo, true);
+        this.recuerdosGrupo.add(recuerdo);
+        
+        console.log(`   ✅ Recuerdo ${index + 1} en (${pos.x}, ${pos.y})`);
+        
+        // Animación flotante
+        this.tweens.add({
+            targets: recuerdo,
+            y: pos.y - 10,
+            duration: 1000,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
         });
+    });
 
-        plataformas.forEach(p => {
-            const plat = this.physics.add.sprite(p.x, p.y, p.type);
-            plat.displayWidth = p.width;
-            plat.displayHeight = 20;
+    // ========== ENEMIGOS EMOCIONALES ==========
+    console.log('👹 Creando enemigos emocionales...');
+    
+    this.enemigosGrupo = this.physics.add.group();
+    const emociones = [
+        { x: 250, y: 500, tipo: 'miedo', descripcion: 'Sobre plataforma izquierda' },
+        { x: 550, y: 400, tipo: 'duda', descripcion: 'Sobre plataforma móvil' },
+        { x: 850, y: 300, tipo: 'celos', descripcion: 'Sobre plataforma frágil' },
+        { x: 150, y: 650, tipo: 'silencio', descripcion: 'Sobre el suelo' }
+    ];
 
-            // CONFIGURAR CUERPO FÍSICO
-            plat.body.setImmovable(true);
-            plat.body.setAllowGravity(false);
+    emociones.forEach(e => {
+        const enemigo = new EnemigoEmocional(this, e.x, e.y, e.tipo);
+        this.enemigosGrupo.add(enemigo);
+        console.log(`   ✅ ${e.tipo} en (${e.x}, ${e.y}) - ${e.descripcion}`);
+    });
 
-            // ✅ AÑADIR PROPIEDAD FRÁGIL
-            plat.esFragil = p.fragil || false;
-            plat.contador = null;
-            plat.textoContador = null;
-            plat.timerDestruccion = null; // ✅ Añadido para el timer
-
-            // AÑADIR AL GRUPO
-            this.plataformasGrupo.add(plat);
-
-            // Animación para plataforma móvil
-            if (p.type === 'plataforma_movil') {
-                this.tweens.add({
-                    targets: plat,
-                    y: p.y - 50,
-                    duration: 2000,
-                    yoyo: true,
-                    repeat: -1,
-                    ease: 'Sine.easeInOut',
-                    onUpdate: () => {
-                        plat.body.updateFromGameObject();
-                    }
-                });
+    // ========== COLISIONES ==========
+    console.log('🔧 Configurando colisiones...');
+    
+    // Enemigos con suelo
+    this.physics.add.collider(this.enemigosGrupo, this.suelo);
+    
+    // Enemigos con plataformas
+    this.physics.add.collider(
+        this.enemigosGrupo,
+        this.plataformasGrupo,
+        (enemigo, plataforma) => {
+            if (plataforma.esFragil && 
+                enemigo.body.touching.down && 
+                plataforma.body.touching.up &&
+                !enemigo.resuelto) {
+                
+                if (!plataforma.enemigoEncima) {
+                    plataforma.enemigoEncima = true;
+                    this.time.delayedCall(1000, () => {
+                        if (plataforma.enemigoEncima && !enemigo.resuelto) {
+                            this.activarPlataformaFragil(plataforma);
+                        }
+                    });
+                }
+            } else if (!enemigo.body.touching.down) {
+                plataforma.enemigoEncima = false;
             }
+        }
+    );
+    
+    // Enemigos entre sí
+    this.physics.add.collider(this.enemigosGrupo, this.enemigosGrupo);
+    
+    console.log('✅ Mundo básico creado correctamente');
+}
 
-            // Animación para plataforma frágil (parpadeo sutil)
-            if (p.type === 'plataforma_fragil') {
-                this.tweens.add({
-                    targets: plat,
-                    alpha: 0.8,
-                    duration: 800,
-                    yoyo: true,
-                    repeat: -1,
-                    ease: 'Sine.easeInOut'
-                });
+// MEJORA EN crearJugador() - Colisión mejorada con enemigos
+crearJugador() {
+    const textureKey = this.textures.exists('protagonista_real') 
+        ? 'protagonista_real' 
+        : 'protagonista';
+    
+    console.log('👤 Creando jugador con:', textureKey);
+    
+    this.jugador = this.physics.add.sprite(100, 500, textureKey);
+    this.jugador.setFrame(0);
+    
+    if (this.anims.exists('quieto')) {
+        this.jugador.play('quieto');
+    }
+
+    // Configurar física
+    this.jugador.body.setSize(28, 42);
+    this.jugador.body.setOffset(2, 6);
+    this.jugador.body.setCollideWorldBounds(true);
+    this.jugador.body.setGravityY(300);
+    this.jugador.body.setMaxVelocity(250, 600);
+
+    // Colisión con plataformas
+    this.physics.add.collider(
+        this.jugador,
+        this.plataformasGrupo,
+        (jugador, plataforma) => {
+            if (plataforma.esFragil && 
+                jugador.body.touching.down && 
+                plataforma.body.touching.up) {
+                this.activarPlataformaFragil(plataforma);
             }
-        });
+        }
+    );
 
-        // Crear algunos recuerdos para recolectar
-        this.recuerdosGrupo = this.physics.add.staticGroup();
-        const posicionesRecuerdos = [
-            { x: 350, y: 500 },
-            { x: 650, y: 400 },
-            { x: 950, y: 300 },
-            { x: 1150, y: 450 }
-        ];
+    // Colisión con suelo
+    this.physics.add.collider(this.jugador, this.suelo);
 
-        posicionesRecuerdos.forEach(pos => {
-            const recuerdo = this.add.sprite(pos.x, pos.y, getKey('recuerdo'));
-            this.physics.add.existing(recuerdo, true);
-            this.recuerdosGrupo.add(recuerdo);
-        });
+    // ✅ COLISIÓN MEJORADA CON ENEMIGOS
+    this.colisionJugadorEnemigos = this.physics.add.overlap(
+        this.jugador,
+        this.enemigosGrupo,
+        (jugador, enemigo) => {
+            if (!enemigo || enemigo.resuelto) return;
+            
+            // Detectar si el jugador cayó sobre el enemigo
+            const jugadorCayendo = jugador.body.velocity.y > 0;
+            const jugadorEncima = jugador.body.bottom <= enemigo.body.top + 10;
+            
+            if (jugadorCayendo && jugadorEncima) {
+                console.log('💥 ¡Golpe desde arriba a', enemigo.tipo + '!');
+                enemigo.interactuar();
+                jugador.body.setVelocityY(-250); // Rebote más alto
+                
+                // Efecto visual
+                this.cameras.main.shake(150, 0.005);
+                
+                // Partículas de impacto
+                this.crearEfectoRebote(enemigo.x, enemigo.y);
+            } else if (!this.invulnerable) {
+                // Colisión lateral - daño
+                console.log('❤️ Daño por colisión con', enemigo.tipo);
+                this.recibirDano();
+            }
+        }
+    );
 
-        // ✅ MODIFICADO: Crear enemigos emocionales usando la nueva clase
-        this.enemigosGrupo = this.physics.add.group();
-        const emociones = [
-            { x: 500, y: 620, tipo: 'miedo' },
-            { x: 800, y: 620, tipo: 'duda' },
-            { x: 1200, y: 620, tipo: 'celos' },
-            { x: 400, y: 400, tipo: 'silencio' }
-        ];
+    // Overlap con recuerdos
+    this.physics.add.overlap(this.jugador, this.recuerdosGrupo, (jugador, recuerdo) => {
+        this.recolectarRecuerdo(recuerdo);
+    });
 
-        emociones.forEach(e => {
-            const enemigo = new EnemigoEmocional(this, e.x, e.y, e.tipo);
-            this.enemigosGrupo.add(enemigo);
+    this.invulnerable = false;
+    console.log('✅ Jugador creado con todas las colisiones');
+}
+
+// NUEVO MÉTODO: Efecto visual de rebote
+crearEfectoRebote(x, y) {
+    // Círculo de impacto
+    const impacto = this.add.circle(x, y, 10, 0xffff00, 0.8);
+    
+    this.tweens.add({
+        targets: impacto,
+        radius: 40,
+        alpha: 0,
+        duration: 400,
+        ease: 'Power2',
+        onComplete: () => impacto.destroy()
+    });
+    
+    // Partículas
+    for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2;
+        const particula = this.add.circle(x, y, 3, 0xffffff, 0.9);
+        
+        this.tweens.add({
+            targets: particula,
+            x: x + Math.cos(angle) * 30,
+            y: y + Math.sin(angle) * 30,
+            alpha: 0,
+            duration: 500,
+            ease: 'Power2',
+            onComplete: () => particula.destroy()
         });
     }
+    
+    // Texto flotante
+    const texto = this.add.text(x, y - 30, '¡POW!', {
+        fontSize: '20px',
+        fontWeight: 'bold',
+        color: '#ffff00',
+        stroke: '#000000',
+        strokeThickness: 4
+    }).setOrigin(0.5);
+    
+    this.tweens.add({
+        targets: texto,
+        y: y - 60,
+        alpha: 0,
+        scale: 1.5,
+        duration: 600,
+        ease: 'Power2',
+        onComplete: () => texto.destroy()
+    });
+}
+
+// MEJORA EN update() - Actualizar enemigos correctamente
+update() {
+    if (this.vida <= 0) return;
+
+    // Movimiento del jugador
+    if (this.cursors.left.isDown) {
+        this.jugador.body.setVelocityX(-200);
+        if (this.jugador.body.onFloor()) {
+            this.jugador.play('caminar', true);
+        }
+        this.jugador.flipX = true;
+    } else if (this.cursors.right.isDown) {
+        this.jugador.body.setVelocityX(200);
+        if (this.jugador.body.onFloor()) {
+            this.jugador.play('caminar', true);
+        }
+        this.jugador.flipX = false;
+    } else {
+        this.jugador.body.setVelocityX(0);
+        if (this.jugador.body.onFloor()) {
+            this.jugador.play('quieto', true);
+        }
+    }
+
+    // Salto
+    if (Phaser.Input.Keyboard.JustDown(this.spaceBar) && this.jugador.body.onFloor()) {
+        this.jugador.body.setVelocityY(-400);
+        this.jugador.play('saltar', true);
+    }
+
+    // Habilidades
+    if (Phaser.Input.Keyboard.JustDown(this.teclaE)) {
+        this.usarHabilidadEscuchar();
+    }
+
+    if (Phaser.Input.Keyboard.JustDown(this.teclaR)) {
+        this.usarHabilidadRecordar();
+    }
+
+    // Verificar caída
+    if (this.jugador.y > 750) {
+        this.respawn();
+    }
+
+    // Verificar fin de nivel
+    if (this.jugador.x > 1250) {
+        this.completarNivel();
+    }
+
+    // Actualizar plataformas frágiles
+    this.plataformasGrupo.children.iterate(plat => {
+        if (plat && plat.esFragil && plat.contador) {
+            const jugadorEnPlataforma = 
+                this.jugador.body.bottom <= plat.body.top + 5 &&
+                this.jugador.body.bottom >= plat.body.top &&
+                Math.abs(this.jugador.x - plat.x) < plat.displayWidth / 2;
+            
+            if (!jugadorEnPlataforma && plat.contador > 0) {
+                this.resetearPlataformaFragil(plat);
+            }
+        }
+        return true;
+    });
+
+    // ✅ ACTUALIZAR ENEMIGOS - MEJORADO
+    if (this.enemigosGrupo && this.enemigosGrupo.children) {
+        this.enemigosGrupo.children.iterate(enemigo => {
+            if (enemigo && enemigo.active && enemigo.update) {
+                try {
+                    enemigo.update();
+                } catch (error) {
+                    console.error('Error actualizando enemigo:', error);
+                }
+            }
+            return true;
+        });
+    }
+}
+
+// MEJORA: Mostrar estadísticas de enemigos en pantalla (opcional)
+mostrarEstadisticasEnemigos() {
+    const enemigosActivos = this.enemigosGrupo.children.entries.filter(e => !e.resuelto).length;
+    const enemigosCalmados = this.enemigosGrupo.children.entries.filter(e => e.resuelto).length;
+    
+    if (this.textoEstadisticas) {
+        this.textoEstadisticas.destroy();
+    }
+    
+    this.textoEstadisticas = this.add.text(
+        20, 
+        100,
+        `Emociones activas: ${enemigosActivos}\nEmociones calmadas: ${enemigosCalmados}`,
+        {
+            fontSize: '16px',
+            color: '#ffffff',
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            padding: { x: 10, y: 5 }
+        }
+    ).setScrollFactor(0).setDepth(100);
+}
+
+// Llama esto en configurarEventos()
+configurarEventos() {
+    this.events.on('enemigoCalmado', (data) => {
+        console.log(`🎭 ${data.tipo} calmado en (${data.x}, ${data.y})`);
+        
+        const mensajes = {
+            miedo: "El miedo se transforma en seguridad",
+            duda: "La duda se transforma en conexión",
+            celos: "Los celos se transforman en impulso",
+            silencio: "El silencio crea espacio para la calma"
+        };
+        
+        this.mostrarMensajeHabilidad(mensajes[data.tipo]);
+        
+        // Recompensa
+        this.recuerdosRecolectados += 3;
+        this.textoRecuerdos.setText(`Recuerdos: ${this.recuerdosRecolectados}`);
+        
+        // Actualizar estadísticas
+        this.mostrarEstadisticasEnemigos();
+    });
+}
+// Y en crearJugador(), REEMPLAZA la sección de colisión con enemigos:
+crearJugador() {
+    // Determinar textura
+    const textureKey = this.textures.exists('protagonista_real') 
+        ? 'protagonista_real' 
+        : 'protagonista';
+    
+    console.log('👤 Usando textura:', textureKey);
+    
+    // Crear sprite CON FÍSICA desde el inicio
+    this.jugador = this.physics.add.sprite(200, 500, textureKey);
+    
+    // Asegurarse de usar el frame 0 inicialmente
+    this.jugador.setFrame(0);
+    
+    // Intentar reproducir animación
+    if (this.anims.exists('quieto')) {
+        this.jugador.play('quieto');
+    } else {
+        console.warn('⚠️ Animación "quieto" no encontrada');
+    }
+
+    // Configurar cuerpo de física
+    this.jugador.body.setSize(28, 42);
+    this.jugador.body.setOffset(2, 6);
+    this.jugador.body.setCollideWorldBounds(true);
+    this.jugador.body.setGravityY(300);
+
+    // ✅ COLISIÓN CON PLATAFORMAS
+    this.physics.add.collider(
+        this.jugador, 
+        this.plataformasGrupo,
+        (jugador, plataforma) => {
+            // Detectar si es plataforma frágil y el jugador está encima
+            if (plataforma.esFragil && 
+                jugador.body.touching.down && 
+                plataforma.body.touching.up) {
+                this.activarPlataformaFragil(plataforma);
+            }
+        }
+    );
+
+    // Colisión con suelo
+    this.physics.add.collider(this.jugador, this.suelo);
+
+    // ✅ COLISIÓN MEJORADA CON ENEMIGOS
+    this.physics.add.collider(
+        this.jugador, 
+        this.enemigosGrupo, 
+        (jugador, enemigo) => {
+            if (enemigo && !enemigo.resuelto) {
+                // Si el jugador salta sobre el enemigo
+                if (jugador.body.touching.down && enemigo.body.touching.up) {
+                    console.log('💥 Jugador saltó sobre', enemigo.tipo);
+                    enemigo.interactuar();
+                    jugador.body.setVelocityY(-200); // Rebote
+                } else if (!this.invulnerable) {
+                    // Colisión lateral - daño
+                    console.log('❤️ Jugador recibe daño de', enemigo.tipo);
+                    this.recibirDano();
+                }
+            }
+        }
+    );
+
+    // Overlap con recuerdos (recolección)
+    this.physics.add.overlap(this.jugador, this.recuerdosGrupo, (jugador, recuerdo) => {
+        this.recolectarRecuerdo(recuerdo);
+    });
+
+    // ✅ Inicializar flag de invulnerabilidad
+    this.invulnerable = false;
+    
+    console.log('✅ Jugador creado con todas las colisiones');
+}
 
     crearJugador() {
     // Verificar si existe la textura real
@@ -215,19 +637,17 @@ export class Inicio extends Phaser.Scene {
     this.jugador.body.setCollideWorldBounds(true);
     this.jugador.body.setGravityY(300);
 
-    // ✅ COLISIÓN CON PLATAFORMAS (CON DETECCIÓN DE FRÁGILES)
-    this.physics.add.collider(
-        this.jugador, 
-        this.plataformasGrupo,
-        (jugador, plataforma) => {
-            // Detectar si es plataforma frágil y el jugador está encima
-            if (plataforma.esFragil && 
-                jugador.body.touching.down && 
-                plataforma.body.touching.up) {
-                this.activarPlataformaFragil(plataforma);
-            }
-        }
-    );
+// Colisión mejorada con enemigos
+this.physics.add.collider(this.jugador, this.enemigosGrupo, (jugador, enemigo) => {
+    if (enemigo && !enemigo.resuelto && jugador.body.touching.down) {
+        // El jugador saltó sobre el enemigo
+        enemigo.interactuar();
+        jugador.body.setVelocityY(-200); // Rebote
+    } else if (enemigo && !enemigo.resuelto) {
+        // Colisión lateral - daño
+        this.recibirDano();
+    }
+});
 
     // Colisión con suelo
     this.physics.add.collider(this.jugador, this.suelo);
@@ -637,7 +1057,10 @@ export class Inicio extends Phaser.Scene {
                 return true;
             });
         }
+
+        this.actualizarSueloParalax();
     }
+    
 
     usarHabilidadEscuchar() {
         console.log('👂 Habilidad: Escuchar');
@@ -846,4 +1269,12 @@ export class Inicio extends Phaser.Scene {
             return true;
         });
     }
+
+    actualizarSueloParalax() {
+    // Esto hará que el suelo se mueva ligeramente con la cámara (efecto paralaje)
+    if (this.sueloVisual && this.jugador) {
+        // Mueve la textura un 10% de la velocidad del jugador
+        this.sueloVisual.tilePositionX = this.jugador.x * 0.1;
+    }
+}
 }
